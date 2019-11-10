@@ -9,5 +9,7 @@ func main() {
 
 	defer Conn.Close()
 
-	Conn.Write([]byte(`{ "type": "web_request", "server_id": "string", "request_type": "GET/POST/...", "url": "", "status_code": 400, "response_time": 1000, "ip_address": "10.0.0.1", "user_agent": "" }`))
+	for i := 1; i < 1100; i++ {
+		Conn.Write([]byte(`{ "type": "web_request", "server_id": "string", "request_type": "GET/POST/...", "url": "", "status_code": 400, "response_time": 1000, "ip_address": "10.0.0.1", "user_agent": "" }`))
+	}
 }
