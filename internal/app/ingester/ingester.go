@@ -1,6 +1,7 @@
 package ingester
 
 import (
+	"encoding/json"
 	"net"
 	"sync"
 )
@@ -22,6 +23,12 @@ func StartServer(wg *sync.WaitGroup) {
 		for {
 			n, addr, _ := ServerConn.ReadFromUDP(buf)
 			println("Received ", string(buf[0:n]), " from ", addr)
+
+
+			var result map[string]interface{}
+			json.Unmarshal(buf[0:n], &result)
+
+
 
 			// Parse JSON from UDP packet
 			// Send parsed JSON to processor
