@@ -7,6 +7,9 @@ import (
 	"sync"
 )
 
+// Add a method to get a copy of the message from the processor
+// Finish rest of dashboard build out
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "Got %s", r.URL.Path)
 

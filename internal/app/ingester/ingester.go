@@ -6,7 +6,7 @@ import (
 )
 
 func StartServer(wg *sync.WaitGroup) {
-	ServerConn, _ := net.ListenUDP("udp", &net.UDPAddr{ IP: []byte{0, 0, 0, 0}, Port: 1337, Zone: "" })
+	ServerConn, _ := net.ListenUDP("udp", &net.UDPAddr{IP: []byte{0, 0, 0, 0}, Port: 1337, Zone: ""})
 
 	buf := make([]byte, 1024)
 
@@ -22,6 +22,9 @@ func StartServer(wg *sync.WaitGroup) {
 		for {
 			n, addr, _ := ServerConn.ReadFromUDP(buf)
 			println("Received ", string(buf[0:n]), " from ", addr)
+
+			// Parse JSON from UDP packet
+			// Send parsed JSON to processor
 		}
 	}()
 }
