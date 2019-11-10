@@ -10,7 +10,7 @@ import (
 // Send a copy of the message to the dashboard
 
 // This shouldn't be an array, it needs to be something like a queue that only keeps up to 1000 messages, FIFO
-const queueSize int = 1000
+const queueSize int = 100000
 
 var messagesDb [queueSize]map[string]interface{}
 var currentIndex = 0
