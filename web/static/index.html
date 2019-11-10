@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+		<title>Health Dashboard</title>
+
+		<link rel="icon" href="static/favicon.png" />
+
+		<link rel="stylesheet" href="static/style.css" />
+	</head>
+
+	<body>
+		<header class="toolbar">
+			<h1 class="page-title">Health Dashboard</h1>
+		</header>
+
+		<main>
+			<div class="column tiny1">
+				<article class="widget last-60-mins list">
+					<header>
+						<h2 class="label">Last 60 minutes</h2>
+					</header>
+
+					<ul>
+						<li><b>Web requests</b>
+						<span>8.3m</span></li>
+
+						<li><b>Database queries</b>
+						<span>530.6k</span></li>
+
+						<li><b>Search queries</b>
+						<span>150.3k</span></li>
+
+						<li><b>Cache hit rate</b>
+						<span>76%</span></li>
+
+						<li><b>Live servers</b>
+						<span>37</span></li>
+					</ul>
+				</article>
+
+				<article class="widget slowest-web list">
+					<header>
+						<h2 class="label">Slowest web requests</h2>
+					</header>
+
+					<ul>
+						<li><b>get /</b>
+						<span>312 ms</span></li>
+
+						<li><b>post /contact</b>
+						<span>268 ms</span></li>
+
+						<li><b>get /</b>
+						<span>312 ms</span></li>
+
+						<li><b>post /contact</b>
+						<span>268 ms</span></li>
+
+						<li><b>get /</b>
+						<span>312 ms</span></li>
+
+						<li><b>post /contact</b>
+						<span>268 ms</span></li>
+
+						<li><b>post /contact</b>
+						<span>268 ms</span></li>
+					</ul>
+				</article>
+			</div>
+
+			<div class="column wide3">
+				<article class="widget overview">
+					<header>
+						<h2 class="label">Average web request response time</h2>
+					</header>
+
+					<div class="chart">
+						<canvas id="resp-time"></canvas>
+					</div>
+
+					<section class="stats">
+						<div>
+							<span>63%</span>
+							<h3>Average CPU Usage</h3>
+						</div>
+
+						<div>
+							<span>1.3k</span>
+							<h3>Messages/Second</h3>
+						</div>
+
+						<div>
+							<span>85ms</span>
+							<h3>Average Response Time</h3>
+						</div>
+
+						<div>
+							<span>0.2%</span>
+							<h3>Overall Error Rate</h3>
+						</div>
+					</section>
+				</article>
+
+				<article class="widget hosts">
+					<header>
+						<h2 class="label">Highest load hosts</h2>
+					</header>
+
+					<div class="table-container">
+						<table>
+							<thead>
+								<tr>
+									<td class="name">Host name</td>
+									<td class="error-rate">Error Rate</td>
+									<td class="memory">Memory</td>
+									<td class="cpu">CPU usage</td>
+									<td class="throughput">Throughput</td>
+									<td class="resp-time">Resp. Time</td>
+								</tr>
+							</thead>
+
+							<tbody>
+								<tr>
+									<td class="name">app-109</td>
+									<td class="error-rate">0.02%</td>
+									<td class="memory">3.6/4 GiB</td>
+									<td class="cpu">89%</td>
+									<td class="throughput">43.4k RPM</td>
+									<td class="resp-time">312 ms</td>
+								</tr>
+
+								<tr>
+									<td class="name">app-109</td>
+									<td class="error-rate">0.02%</td>
+									<td class="memory">3.6/4 GiB</td>
+									<td class="cpu">89%</td>
+									<td class="throughput">43.4k RPM</td>
+									<td class="resp-time">312 ms</td>
+								</tr>
+
+								<tr>
+									<td class="name">app-109</td>
+									<td class="error-rate">0.02%</td>
+									<td class="memory">3.6/4 GiB</td>
+									<td class="cpu">89%</td>
+									<td class="throughput">43.4k RPM</td>
+									<td class="resp-time">312 ms</td>
+								</tr>
+
+								<tr>
+									<td class="name">app-109</td>
+									<td class="error-rate">0.02%</td>
+									<td class="memory">3.6/4 GiB</td>
+									<td class="cpu">89%</td>
+									<td class="throughput">43.4k RPM</td>
+									<td class="resp-time">312 ms</td>
+								</tr>
+
+								<tr>
+									<td class="name">app-109</td>
+									<td class="error-rate">0.02%</td>
+									<td class="memory">3.6/4 GiB</td>
+									<td class="cpu">89%</td>
+									<td class="throughput">43.4k RPM</td>
+									<td class="resp-time">312 ms</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</article>
+			</div>
+		</main>
+
+		<script type="text/javascript" src="static/chart.js"></script>
+		<script type="text/javascript" src="static/app.js"></script>
+
+		<script type="text/javascript">
+			var data = {
+				labels: ["-30 mins", "-25 mins", "-20 mins", "-15 mins", "-10 mins", "-5 mins", "0 mins"],
+				datasets: [{
+					data: [100, 78, 34, 46, 106, 99, 164],
+					borderColor: "#ff3b30",
+					backgroundColor: "rgba(255, 59, 48, 0.2)"
+				}]
+			};
+
+			var chart = new Chart("resp-time", {
+				type: "line",
+				data: data,
+				options: {
+					legend: false,
+					tooltips: true,
+					maintainAspectRatio: false
+				}
+			});
+		</script>
+	</body>
+</html>

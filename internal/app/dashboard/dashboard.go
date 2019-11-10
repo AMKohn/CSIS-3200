@@ -23,7 +23,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func StartServer(wg *sync.WaitGroup) {
 	println("Dashboard initializing")
-	http.HandleFunc("/", handler)
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "web/static/index.html")
+	})
+
+	fs := http.FileServer(http.Dir("web/static"))
+
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	// Use a goroutine so we don't block while listening for requests
 	go func() {
