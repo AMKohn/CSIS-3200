@@ -12,16 +12,20 @@ import (
 
 // This shouldn't be an array, it needs to be something like a queue that only keeps up to 1000 messages, FIFO
 var messagesDb [1000]map[string]interface{}
+var timeStampDb [1000]int64
+var position = 0
 
 
 func SaveMessage(message map[string]interface{}){
 	timeStamp := time.Now().UnixNano() / 1000000
-	
-
+	messagesDb[position]= message
+	timeStampDb[position] = timeStamp
+	position++
 }
 
 func HandleMessage(message map[string]interface{}) {
 	// "Save" the message
+	SaveMessage(message)
 	// Send a copy to the dashboard
 	dashboard.HandleMessage(message)
 }
