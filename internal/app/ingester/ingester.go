@@ -1,7 +1,10 @@
 package ingester
 
 import (
+	"csis3200/internal/app/processor"
 	"encoding/json"
+	"fmt"
+	"log"
 	"net"
 	"sync"
 )
@@ -27,6 +30,15 @@ func StartServer(wg *sync.WaitGroup) {
 
 			var result map[string]interface{}
 			json.Unmarshal(buf[0:n], &result)
+
+			processor.HandleMessage(result)
+
+			var jsonData []byte
+			jsonData, err := json.Marshal(result)
+			if err != nil {
+				log.Println(err)
+			}
+			fmt.Println(string(jsonData))
 
 
 
