@@ -15,14 +15,30 @@ var messagesDb [queueSize]map[string]interface{}
 var currentIndex = 0
 
 func GetRecentData() []map[string]interface{} {
-	var messages []map[string]interface{}
-
 	timeStamp := time.Now().Add(time.Duration(-30)*time.Minute).UnixNano() / 1000000
 
-	for i := currentIndex; i < queueSize; i++ {
-		if m := messages[i]; m["timestamp"].(int64) >= timeStamp {
-			messages = append(messages, messagesDb[i])
+	i := currentIndex
+
+	for i > 0 && messagesDb[i] != nil && messagesDb[i]["timestamp"].(int64) >= timeStamp {
+		i--
+	}
+
+	// If the first item in the messagesDb is less than 30 minutes old, check and
+	// see if we need to wrap around the end (the last item is recent enough)
+	if i == 0 && messagesDb[queueSize-1] != nil && messagesDb[queueSize-1]["timestamp"].(int64) >= timeStamp {
+		i := queueSize - 1
+
+		for i >= currentIndex && messagesDb[i] != nil && messagesDb[i]["timestamp"].(int64) >= timeStamp {
+			i--
 		}
+	}
+
+	var messages []map[string]interface{}
+
+	if i < currentIndex { // This is a normal slicing operation
+		messages = messagesDb[i:currentIndex]
+	} else { // Otherwise, i > currentIndex and we wrapped around the beginning, get the right sections
+		messages = append(messagesDb[currentIndex:i], messagesDb[0:currentIndex]...)
 	}
 
 	return messages
