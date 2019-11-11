@@ -40,23 +40,34 @@
         return d;
     };
 
+    let chart = null;
+
     const renderChart = function(data) {
-        new Chart("resp-time", {
-            type: "line",
-            data: {
-                labels: ["-30 mins", "-25 mins", "-20 mins", "-15 mins", "-10 mins", "-5 mins", "0 mins"],
-                datasets: [{
-                    data: data.responseTimes,
-                    borderColor: "#ff3b30",
-                    backgroundColor: "rgba(255, 59, 48, 0.2)"
-                }]
-            },
-            options: {
-                legend: false,
-                tooltips: true,
-                maintainAspectRatio: false
-            }
-        });
+        if (chart === null) {
+            chart = new Chart("resp-time", {
+                type: "line",
+                data: {
+                    labels: ["-30 mins", "-25 mins", "-20 mins", "-15 mins", "-10 mins", "-5 mins", "0 mins"],
+                    datasets: [{
+                        data: data.responseTimes,
+                        borderColor: "#ff3b30",
+                        backgroundColor: "rgba(255, 59, 48, 0.2)"
+                    }]
+                },
+                options: {
+                    legend: false,
+                    tooltips: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+        else {
+            chart.data.datasets.forEach((dataset) => {
+                dataset.data = data.responseTimes;
+            });
+
+            chart.update();
+        }
     };
 
     const renderTemplates = function(data) {
@@ -74,4 +85,16 @@
     renderChart(window.initData);
 
     renderTemplates(window.initData);
+
+    setInterval(() => {
+        fetch("/api/getData")
+            .then(response => response.json())
+            .then(d => {
+                d = parseData(d);
+
+                renderChart(d);
+
+                renderTemplates(d);
+            });
+    }, 1000)
 })();
