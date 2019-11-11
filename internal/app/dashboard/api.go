@@ -155,3 +155,13 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	_ = json.NewEncoder(w).Encode(jsonData)
 }
+
+func AvgResponseTimes(data []map[string]interface{}) int{
+	var webRequests int
+	for _, i := range data {
+		if i["webRequests"] == 
+	}
+
+	var average int
+	return average
+}
