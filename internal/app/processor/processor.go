@@ -1,7 +1,6 @@
 package processor
 
 import (
-	"csis3200/internal/app/dashboard"
 	"time"
 )
 
@@ -14,6 +13,20 @@ const queueSize int = 100000
 
 var messagesDb [queueSize]map[string]interface{}
 var currentIndex = 0
+
+func GetRecentData() []map[string]interface{} {
+	var messages []map[string]interface{}
+
+	timeStamp := time.Now().Add(time.Duration(-30)*time.Minute).UnixNano() / 1000000
+
+	for i := currentIndex; i < queueSize; i++ {
+		if m := messages[i]; m["timestamp"].(int64) >= timeStamp {
+			messages = append(messages, messagesDb[i])
+		}
+	}
+
+	return messages
+}
 
 func SaveMessage(message map[string]interface{}) {
 	timeStamp := time.Now().UnixNano() / 1000000
@@ -31,6 +44,4 @@ func SaveMessage(message map[string]interface{}) {
 func HandleMessage(message map[string]interface{}) {
 	// "Save" the message
 	SaveMessage(message)
-	// Send a copy to the dashboard
-	dashboard.HandleMessage(message)
 }

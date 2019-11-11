@@ -6,12 +6,6 @@ import (
 	"sync"
 )
 
-// Add a method to get a copy of the message from the processor
-// Finish rest of dashboard build out
-
-func HandleMessage(message map[string]interface{}) {
-}
-
 func StartServer(wg *sync.WaitGroup) {
 	println("Dashboard initializing")
 
