@@ -30,11 +30,6 @@ func StartServer(wg *sync.WaitGroup) {
 			json.Unmarshal(buf[0:n], &result)
 
 			processor.HandleMessage(result)
-
-
-
-			// Parse JSON from UDP packet
-			// Send parsed JSON to processor
 		}
 	}()
 }

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+		<title>Health Dashboard</title>
+
+		<link rel="icon" href="static/favicon.ico" />
+
+		<link rel="stylesheet" href="static/style.css" />
+	</head>
+
+	<body>
+		<header class="toolbar">
+			<h1 class="page-title">Health Dashboard</h1>
+		</header>
+
+		<main>
+			<div class="column tiny1">
+				<article class="widget last-60-mins list">
+					<script type="text/template" id="last-60-mins">
+						<header>
+							<h2 class="label">Last 60 minutes</h2>
+						</header>
+
+						{{#stats}}
+						<ul>
+							<li><b>Web requests</b>
+								<span>{{webRequests}}</span></li>
+
+							<li><b>Database queries</b>
+								<span>{{databaseQueries}}</span></li>
+
+							<li><b>Search queries</b>
+								<span>{{searchQueries}}</span></li>
+
+							<li><b>Cache hit rate</b>
+								<span>{{cacheHitRate}}</span></li>
+
+							<li><b>Live servers</b>
+								<span>{{liveServers}}</span></li>
+						</ul>
+						{{/stats}}
+					</script>
+				</article>
+
+				<article class="widget slowest-web list">
+					<script type="text/template" id="slowest-web">
+						<header>
+							<h2 class="label">Slowest web requests</h2>
+						</header>
+
+						<ul>
+							{{#webRequests}}
+								<li><b>{{path}}</b>
+								<span>{{time}}</span></li>
+							{{/webRequests}}
+						</ul>
+					</script>
+				</article>
+			</div>
+
+			<div class="column wide3">
+				<article class="widget overview">
+					<header>
+						<h2 class="label">Average web request response time</h2>
+					</header>
+
+					<div class="chart">
+						<canvas id="resp-time"></canvas>
+					</div>
+
+					<section class="stats">
+						<script type="text/template" id="stats">
+							{{#stats}}
+							<div>
+								<span>{{cpuUsage}}</span>
+								<h3>Average CPU Usage</h3>
+							</div>
+
+							<div>
+								<span>{{messageRate}}</span>
+								<h3>Messages/Second</h3>
+							</div>
+
+							<div>
+								<span>{{webResponseTime}}</span>
+								<h3>Average Response Time</h3>
+							</div>
+
+							<div>
+								<span>{{overallErrorRate}}</span>
+								<h3>Overall Error Rate</h3>
+							</div>
+							{{/stats}}
+						</script>
+					</section>
+				</article>
+
+				<article class="widget hosts">
+					<script type="text/template" id="hosts">
+						<header>
+							<h2 class="label">Highest load hosts</h2>
+						</header>
+
+						<div class="table-container">
+							<table>
+								<thead>
+									<tr>
+										<td class="name">Host name</td>
+										<td class="error-rate">Error Rate</td>
+										<td class="memory">Memory</td>
+										<td class="cpu">CPU usage</td>
+										<td class="throughput">Throughput</td>
+										<td class="resp-time">Resp. Time</td>
+									</tr>
+								</thead>
+
+								<tbody>
+									{{#hosts}}
+										<tr>
+											<td class="name">{{name}}</td>
+											<td class="error-rate">{{errorRate}}</td>
+											<td class="memory">{{memory}}</td>
+											<td class="cpu">{{cpuUsage}}</td>
+											<td class="throughput">{{throughput}}</td>
+											<td class="resp-time">{{responseTime}}</td>
+										</tr>
+									{{/hosts}}
+								</tbody>
+							</table>
+						</div>
+					</script>
+				</article>
+			</div>
+		</main>
+
+		<script>
+			window.initData = {
+				stats: {
+					webRequests: 8300000,
+					databaseQueries: 530610,
+					searchQueries: 150300,
+					cacheHitRate: 76,
+					liveServers: 37,
+					cpuUsage: 63,
+					messageRate: 1300,
+					webResponseTime: 85,
+					overallErrorRate: 0.2
+				},
+				webRequests: [{
+					path: "get /",
+					time: "312 ms"
+				}, {
+					path: "post /contact",
+					time: "268 ms"
+				}, {
+					path: "get /",
+					time: "312 ms"
+				}, {
+					path: "post /contact",
+					time: "268 ms"
+				}, {
+					path: "get /",
+					time: "312 ms"
+				}, {
+					path: "post /contact",
+					time: "268 ms"
+				}, {
+					path: "get /",
+					time: "312 ms"
+				}],
+				hosts: [{
+					name: "app-119",
+					errorRate: 0.02,
+					memoryUsage: 3600,
+					memoryCapacity: 4000,
+					cpuUsage: 89,
+					throughput: 43400,
+					responseTime: 312
+				}, {
+					name: "app-109",
+					errorRate: 0.02,
+					memoryUsage: 3600,
+					memoryCapacity: 4000,
+					cpuUsage: 89,
+					throughput: 43400,
+					responseTime: 312
+				}, {
+					name: "app-109",
+					errorRate: 0.02,
+					memoryUsage: 3600,
+					memoryCapacity: 4000,
+					cpuUsage: 89,
+					throughput: 43400,
+					responseTime: 312
+				}, {
+					name: "app-109",
+					errorRate: 0.02,
+					memoryUsage: 3600,
+					memoryCapacity: 4000,
+					cpuUsage: 89,
+					throughput: 43400,
+					responseTime: 312
+				}, {
+					name: "app-109",
+					errorRate: 0.02,
+					memoryUsage: 3600,
+					memoryCapacity: 4000,
+					cpuUsage: 89,
+					throughput: 43400,
+					responseTime: 312
+				}],
+				responseTimes: [100, 78, 34, 46, 106, 99, 164]
+			};
+		</script>
+
+		<script type="text/javascript" src="static/chart.js"></script>
+		<script type="text/javascript" src="static/hogan.js"></script>
+		<script type="text/javascript" src="static/numeral.js"></script>
+		<script type="text/javascript" src="static/app.js"></script>
+	</body>
+</html>

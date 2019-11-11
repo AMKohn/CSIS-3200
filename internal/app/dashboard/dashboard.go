@@ -1,7 +1,6 @@
 package dashboard
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -13,24 +12,19 @@ import (
 func HandleMessage(message map[string]interface{}) {
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	_, err := fmt.Fprintf(w, "Got %s", r.URL.Path)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func StartServer(wg *sync.WaitGroup) {
 	println("Dashboard initializing")
 
+	// Handle API requests under /api
+	http.HandleFunc("/api/", apiHandler)
+
+	// Handle static files under /static
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
+
+	// Return the dashboard for all other requests
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "web/static/index.html")
+		http.ServeFile(w, r, "web/index.html")
 	})
-
-	fs := http.FileServer(http.Dir("web/static"))
-
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	// Use a goroutine so we don't block while listening for requests
 	go func() {
