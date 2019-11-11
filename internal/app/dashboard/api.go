@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"encoding/json"
+	"math/rand"
 	"net/http"
 )
 
@@ -83,7 +84,15 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 			"throughput":     43400,
 			"responseTime":   312,
 		}},
-		"responseTimes": []interface{}{100, 78, 34, 46, 106, 99, 164},
+		"responseTimes": []interface{}{
+			rand.Intn(50) * 2,
+			rand.Intn(50) * 2,
+			rand.Intn(50) * 2,
+			rand.Intn(50) * 2,
+			rand.Intn(50) * 2,
+			rand.Intn(50) * 2,
+			rand.Intn(50) * 2,
+		},
 	}
 
 	_ = json.NewEncoder(w).Encode(jsonData)
