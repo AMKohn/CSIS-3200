@@ -95,7 +95,14 @@ func getResponseTimeRange(data []map[string]interface{}, startTime int64, endTim
 	var numRequests int = 0
 
 	for _, e := range data {
-		if e["type"] == "web_request" && e["timestamp"].(int64) > startTime && e["timestamp"].(int64) <= endTime {
+		inRange := false
+
+		// If we were passed a valid start time, use that
+		if startTime > 0 && endTime > 0 {
+			inRange = e["timestamp"].(int64) > startTime && e["timestamp"].(int64) <= endTime
+		}
+
+		if e["type"] == "web_request" && inRange {
 			totalTime += int(e["response_time"].(float64))
 			numRequests++
 		}
@@ -159,7 +166,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 func AvgResponseTimes(data []map[string]interface{}) int{
 	var webRequests int
 	for _, i := range data {
-		if i["webRequests"] == 
+		if i["webRequests"] ==
 	}
 
 	var average int
