@@ -3,8 +3,8 @@ package dashboard
 import (
 	"csis3200/internal/app/processor"
 	"encoding/json"
-	"math/rand"
 	"net/http"
+	"time"
 )
 
 func getStats(data []map[string]interface{}) map[string]interface{} {
@@ -90,15 +90,54 @@ func getHosts(data []map[string]interface{}) []interface{} {
 	}}
 }
 
+func getResponseTimeRange(data []map[string]interface{}, startTime int64, endTime int64) int {
+	var totalTime int = 0
+	var numRequests int = 0
+
+	for _, e := range data {
+		if e["type"] == "web_request" && e["timestamp"].(int64) > startTime && e["timestamp"].(int64) <= endTime {
+			totalTime += int(e["response_time"].(float64))
+			numRequests++
+		}
+	}
+
+	if numRequests > 0 {
+		return totalTime / numRequests
+	}
+
+	return 0
+}
+
 func getResponseTimes(data []map[string]interface{}) []interface{} {
 	return []interface{}{
-		rand.Intn(50) * 2,
-		rand.Intn(50) * 2,
-		rand.Intn(50) * 2,
-		rand.Intn(50) * 2,
-		rand.Intn(50) * 2,
-		rand.Intn(50) * 2,
-		rand.Intn(50) * 2,
+		getResponseTimeRange(
+			data,
+			time.Now().Add(time.Duration(-325)*time.Minute/10).UnixNano()/1000000,
+			time.Now().Add(time.Duration(-275)*time.Minute/10).UnixNano()/1000000),
+		getResponseTimeRange(
+			data,
+			time.Now().Add(time.Duration(-275)*time.Minute/10).UnixNano()/1000000,
+			time.Now().Add(time.Duration(-225)*time.Minute/10).UnixNano()/1000000),
+		getResponseTimeRange(
+			data,
+			time.Now().Add(time.Duration(-225)*time.Minute/10).UnixNano()/1000000,
+			time.Now().Add(time.Duration(-175)*time.Minute/10).UnixNano()/1000000),
+		getResponseTimeRange(
+			data,
+			time.Now().Add(time.Duration(-175)*time.Minute/10).UnixNano()/1000000,
+			time.Now().Add(time.Duration(-125)*time.Minute/10).UnixNano()/1000000),
+		getResponseTimeRange(
+			data,
+			time.Now().Add(time.Duration(-125)*time.Minute/10).UnixNano()/1000000,
+			time.Now().Add(time.Duration(-75)*time.Minute/10).UnixNano()/1000000),
+		getResponseTimeRange(
+			data,
+			time.Now().Add(time.Duration(-75)*time.Minute/10).UnixNano()/1000000,
+			time.Now().Add(time.Duration(-25)*time.Minute/10).UnixNano()/1000000),
+		getResponseTimeRange(
+			data,
+			time.Now().Add(time.Duration(-25)*time.Minute/10).UnixNano()/1000000,
+			time.Now().UnixNano()/1000000),
 	}
 }
 
