@@ -192,7 +192,6 @@ func averageCPU(data []map[string]interface{}) float64{
 func msgPerSec(data []map[string]interface{}) float64{
 	var totalMSG = 0.0
 
-
 	for  i := 0; i < len(data); i++ {
 		totalMSG++
 	}
@@ -200,6 +199,22 @@ func msgPerSec(data []map[string]interface{}) float64{
 	return totalMSG / 1800
 }
 
-func errorRate(){
+func averageErrorRate(data []map[string]interface{}) float64{
+	var totalError = 0.0
+	var totalMessage = 0
 
+	for _, i := range data {
+		if i["type"] == "webRequest"{
+			if i["status_code"] < 200 && i["status_code"] > 300 {
+				totalError++
+			}
+			requests++
+		}
+	}
+	
+	if totalMessage == 0{
+		return 0.0
+	}
+
+	return totalError / totalMessage
 }
