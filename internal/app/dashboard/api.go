@@ -201,17 +201,17 @@ func msgPerSec(data []map[string]interface{}) float64{
 
 func averageErrorRate(data []map[string]interface{}) float64{
 	var totalError = 0.0
-	var totalMessage = 0
+	var totalMessage = 0.0
 
 	for _, i := range data {
 		if i["type"] == "webRequest"{
-			if i["status_code"] < 200 && i["status_code"] > 300 {
+			if i["status_code"].(int) < 200 && i["status_code"].(int) > 300 {
 				totalError++
 			}
-			requests++
+			totalMessage++
 		}
 	}
-	
+
 	if totalMessage == 0{
 		return 0.0
 	}
