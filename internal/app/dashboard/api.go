@@ -163,12 +163,43 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(jsonData)
 }
 
-func AvgResponseTimes(data []map[string]interface{}) int{
-	var webRequests int
+func averageResponseTimes(data []map[string]interface{}) int{
+	var time = 0
+	var requests = 0
 	for _, i := range data {
-		if i["webRequests"] ==
+		if i["type"] == "webRequest"{
+			time += int(i["responseTime"].(float64))
+			requests++
+		}
+	}
+	return time / requests
+}
+
+
+func averageCPU(data []map[string]interface{}) float64{
+	var totalCPU = 0.0
+	var totalRequests = 0.0
+	for _, i := range data{
+		totalCPU += i["cpuUsage"].(float64)
+		totalRequests ++
+	}
+	if totalRequests > 0.0 {
+		return totalCPU/totalRequests * 100
+	}
+	return 0.0
+}
+
+func msgPerSec(data []map[string]interface{}) float64{
+	var totalMSG = 0.0
+
+
+	for  i := 0; i < len(data); i++ {
+		totalMSG++
 	}
 
-	var average int
-	return average
+	return totalMSG / 1800
+}
+
+func errorRate(){
+
 }
