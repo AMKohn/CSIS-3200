@@ -33,8 +33,9 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 
 	if webRequests == 0{
 		cacheHitRate = 0
+	} else {
+		cacheHitRate = reverseProxy / webRequests
 	}
-	cacheHitRate = reverseProxy / webRequests
 
 	return map[string]interface{}{
 		"webRequests":      webRequests,
@@ -274,6 +275,10 @@ func averageResponseTimes(data []map[string]interface{}) int{
 			requests++
 		}
 	}
+	if requests == 0{
+		return 0
+	}
+
 	return time / requests
 }
 
