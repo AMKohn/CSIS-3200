@@ -22,8 +22,8 @@ func StartServer(wg *sync.WaitGroup) {
 		defer wg.Done()
 
 		for {
-			n, addr, _ := ServerConn.ReadFromUDP(buf)
-			println("Received ", string(buf[0:n]), " from ", addr)
+			n, _, _ := ServerConn.ReadFromUDP(buf)
+			//println("Received ", string(buf[0:n]), " from ", addr)// addr is the second return value in ReadFromUDP
 
 
 			var result map[string]interface{}

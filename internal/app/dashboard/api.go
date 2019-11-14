@@ -3,7 +3,9 @@ package dashboard
 import (
 	"csis3200/internal/app/processor"
 	"encoding/json"
+	"math"
 	"net/http"
+	"sort"
 	"time"
 )
 
@@ -73,47 +75,120 @@ func getWebRequests(data []map[string]interface{}) []interface{} {
 }
 
 func getHosts(data []map[string]interface{}) []interface{} {
-	return []interface{}{map[string]interface{}{
-		"name":           "app-119",
-		"errorRate":      0.02,
-		"memoryUsage":    3600,
-		"memoryCapacity": 4000,
-		"cpuUsage":       89,
-		"throughput":     43400,
-		"responseTime":   312,
-	}, map[string]interface{}{
-		"name":           "app-109",
-		"errorRate":      0.02,
-		"memoryUsage":    3600,
-		"memoryCapacity": 4000,
-		"cpuUsage":       89,
-		"throughput":     43400,
-		"responseTime":   312,
-	}, map[string]interface{}{
-		"name":           "app-109",
-		"errorRate":      0.02,
-		"memoryUsage":    3600,
-		"memoryCapacity": 4000,
-		"cpuUsage":       89,
-		"throughput":     43400,
-		"responseTime":   312,
-	}, map[string]interface{}{
-		"name":           "app-109",
-		"errorRate":      0.02,
-		"memoryUsage":    3600,
-		"memoryCapacity": 4000,
-		"cpuUsage":       89,
-		"throughput":     43400,
-		"responseTime":   312,
-	}, map[string]interface{}{
-		"name":           "app-109",
-		"errorRate":      0.02,
-		"memoryUsage":    3600,
-		"memoryCapacity": 4000,
-		"cpuUsage":       89,
-		"throughput":     43400,
-		"responseTime":   312,
-	}}
+	type host struct {
+		Name   string
+		EventCount int
+		TotalRequests int
+		ErrorRequests int
+		TotalResponseTime int
+		OldestRequestTime int64
+		NewestRequestTime int64
+		LastSystemEvent map[string]interface{}
+	}
+
+	// Use pointers to hosts to allow updating the struct, see https://stackoverflow.com/a/32751792/900747
+	var hostData = map[string]*host{}
+
+	// Count the number of events for each host and put them into the map
+	for _, e := range data {
+		if _, d := hostData[e["server_id"].(string)]; !d {
+			hostData[e["server_id"].(string)] = &host{
+				e["server_id"].(string),
+				0,
+				0,
+				0,
+				0,
+				0,
+				0,
+				map[string]interface{}{ // Default
+					"type": "system",
+					"timestamp": int64(0),
+					"server_id": e["server_id"].(string),
+					"cpu_usage": 0.0,
+					"memory_usage": 0.0,
+					"memory_capacity": 0.0,
+				},
+			}
+		}
+
+		hostData[e["server_id"].(string)].EventCount++
+	}
+
+	// Copy the pointers to a slice so we can sort them and get the top entries
+	var ss []*host
+	for _, v := range hostData {
+		ss = append(ss, v)
+	}
+
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[i].EventCount > ss[j].EventCount
+	})
+
+	// Only keep the top five hosts
+	if len(ss) > 5 {
+		ss = ss[:5]
+	}
+
+	// And put them back into the hostData map so we can update them efficiently
+	hostData = map[string]*host{}
+
+	for _, host := range ss {
+		hostData[host.Name] = host
+	}
+	
+	// Go through the events and calculate the relevant statistics
+	for _, e := range data {
+		hData, exists := hostData[e["server_id"].(string)]
+
+		// Skip the event if it's not from one of our top hosts
+		if !exists {
+			continue
+		}
+
+		switch e["type"] {
+			case "web_request":
+				hData.TotalRequests++
+				hData.TotalResponseTime += int(e["response_time"].(float64))
+
+				// This matches unsuccessful requests
+				if e["status_code"].(float64) >= 400 && e["status_code"].(float64) < 600 {
+					hData.ErrorRequests++
+				}
+
+				if hData.OldestRequestTime > e["timestamp"].(int64) {
+					hData.OldestRequestTime = e["timestamp"].(int64)
+				} else if hData.NewestRequestTime < e["timestamp"].(int64) {
+					hData.NewestRequestTime = e["timestamp"].(int64)
+				}
+
+				break
+
+			case "system":
+				if hData.LastSystemEvent["timestamp"].(int64) <= e["timestamp"].(int64) {
+					hData.LastSystemEvent = e
+				}
+
+				break
+		}
+	}
+
+	var retData []interface{}
+
+	for _, h := range hostData {
+		var minuteRange = int((h.NewestRequestTime - h.OldestRequestTime) / 1000 / 60)
+
+		retData = append(retData, map[string]interface{}{
+			"name": h.Name,
+			"errorRate": math.Round((float64(h.ErrorRequests) / float64(h.TotalRequests)) * 10000) / 100,
+			"memoryUsage": h.LastSystemEvent["memory_usage"].(float64),
+			"memoryCapacity": h.LastSystemEvent["memory_capacity"].(float64),
+			"cpuUsage": h.LastSystemEvent["cpu_usage"].(float64),
+			"throughput": h.TotalRequests / minuteRange,
+			"responseTime": h.TotalResponseTime / h.TotalRequests,
+		})
+	}
+
+	return retData
 }
 
 func getResponseTimeRange(data []map[string]interface{}, startTime int64, endTime int64) int {
@@ -180,6 +255,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	data := processor.GetRecentData()
 
 	jsonData := map[string]interface{}{
+		"messagesLast30":len(data),
 		"stats":         getStats(data),
 		"webRequests":   getWebRequests(data),
 		"hosts":         getHosts(data),
