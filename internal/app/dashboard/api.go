@@ -229,6 +229,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	data := processor.GetRecentData()
 
 	jsonData := map[string]interface{}{
+		"messagesLast30":len(data),
 		"stats":         getStats(data),
 		"webRequests":   getWebRequests(data),
 		"hosts":         getHosts(data),
