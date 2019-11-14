@@ -8,16 +8,42 @@ import (
 )
 
 func getStats(data []map[string]interface{}) map[string]interface{} {
+	var webRequests = 0
+	var databaseQueries = 0
+	var searchQueries = 0
+	var reverseProxy = 0
+	var cacheHitRate = 0
+
+	for _, i := range data {
+		if i["type"] == "web_request"{
+			webRequests++
+		}
+		if i["type"] == "database"{
+			databaseQueries++
+		}
+		if i["type"] == "search"{
+			searchQueries++
+		}
+		if i["type"] == "reverse_proxy"{
+			reverseProxy++
+		}
+	}
+
+	if webRequests == 0{
+		cacheHitRate = 0
+	}
+	cacheHitRate = reverseProxy / webRequests
+
 	return map[string]interface{}{
-		"webRequests":      8300000,
-		"databaseQueries":  530610,
-		"searchQueries":    150300,
-		"cacheHitRate":     76,
+		"webRequests":      webRequests,
+		"databaseQueries":  databaseQueries,
+		"searchQueries":    searchQueries,
+		"cacheHitRate":     cacheHitRate,
 		"liveServers":      37,
-		"cpuUsage":         63,
-		"messageRate":      1300,
-		"webResponseTime":  85,
-		"overallErrorRate": 0.2,
+		"cpuUsage":         averageCPU(data),
+		"messageRate":      msgPerSec(data),
+		"webResponseTime":  averageResponseTimes(data),
+		"overallErrorRate": averageErrorRate(data),
 	}
 }
 
@@ -190,13 +216,8 @@ func averageCPU(data []map[string]interface{}) float64{
 }
 
 func msgPerSec(data []map[string]interface{}) float64{
-	var totalMSG = 0.0
 
-	for  i := 0; i < len(data); i++ {
-		totalMSG++
-	}
-
-	return totalMSG / 1800
+	return float64(len(data)) / 1800
 }
 
 func averageErrorRate(data []map[string]interface{}) float64{
@@ -205,7 +226,7 @@ func averageErrorRate(data []map[string]interface{}) float64{
 
 	for _, i := range data {
 		if i["type"] == "webRequest"{
-			if i["status_code"].(int) < 200 && i["status_code"].(int) > 300 {
+			if i["status_code"].(float64) >= 400 {
 				totalError++
 			}
 			totalMessage++
@@ -217,4 +238,13 @@ func averageErrorRate(data []map[string]interface{}) float64{
 	}
 
 	return totalError / totalMessage
+}
+
+
+func calculateLiveServers(data []map[string]interface{}) int{
+	var servers map[string]bool
+
+	
+
+	return len(servers)
 }
