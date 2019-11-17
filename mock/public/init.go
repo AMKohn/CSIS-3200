@@ -48,11 +48,13 @@ func GetInitRequests(minutes int) []map[string]interface{} {
 			for i := 0; i < rate / 60 / 10; i++ {
 				retSlice = append(retSlice, s.GetLogMessage(ts))
 			}
+		}
 
-			// If it's been more than 1 second, send a health ping too
-			if ts - lastTs > 1000 {
-				lastTs = ts
+		// If it's been more than 1 second, send a health ping too
+		if ts - lastTs > 1000 {
+			lastTs = ts
 
+			for _, s := range servers {
 				retSlice = append(retSlice, s.GetSystemMessage(ts))
 			}
 		}

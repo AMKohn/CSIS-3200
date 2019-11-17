@@ -31,11 +31,13 @@ func main() {
 			for i := 0; i < rate / 60 / 10; i++ {
 				_ = json.NewEncoder(Conn).Encode(s.GetLogMessage(ts))
 			}
+		}
 
-			// If it's been more than 1 second, send a health ping too
-			if ts - lastTs > 1000 {
-				lastTs = ts
+		// If it's been more than 1 second, send a health ping too
+		if ts - lastTs > 1000 {
+			lastTs = ts
 
+			for _, s := range servers {
 				_ = json.NewEncoder(Conn).Encode(s.GetSystemMessage(ts))
 			}
 		}

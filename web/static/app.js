@@ -33,7 +33,7 @@
             e.cpuUsage += "%";
             e.responseTime += " ms";
 
-            e.memory = numeral(e.memoryUsage * 1000).format("0.0 ib") + " / " + numeral(e.memoryCapacity * 1000).format("0.0 ib");
+            e.memory = numeral(e.memoryUsage * 1000).format("0.0 b") + " / " + numeral(e.memoryCapacity * 1000).format("0.0 b");
             e.throughput = numeral(e.throughput).format("0.0a") + " RPM";
         });
 
@@ -57,7 +57,14 @@
                 options: {
                     legend: false,
                     tooltips: true,
-                    maintainAspectRatio: false
+                    maintainAspectRatio: false,
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    }
                 }
             });
         }

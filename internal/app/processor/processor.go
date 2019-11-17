@@ -6,7 +6,7 @@ import (
 )
 
 // Load mock data
-var messagesDb = Mock.GetInitRequests(5)
+var messagesDb = Mock.GetInitRequests(30)
 
 func GetRecentData() []map[string]interface{} {
 	timeStamp := time.Now().Add(time.Duration(-30) * time.Minute).UnixNano() / 1000000

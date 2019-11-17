@@ -29,7 +29,7 @@ func (w WebServer) GetLogMessage(ts int64) map[string]interface{} {
 		"request_type": requestType,
 		"path": urlPaths[rand.Intn(7)],
 		"status_code": float64(statusCode),
-		"response_time": float64(rand.Intn(w.SpeedFactor) + (w.SpeedFactor / 10)),
+		"response_time": float64(rand.Intn(w.SpeedFactor / 2) + (w.SpeedFactor / 10)) + float64((ts / 1000 / 60) % 10) * 10,
 		"ip_address": "10.0.0.1",
 		"user_agent": "",
 	}

@@ -16,7 +16,7 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 	var databaseQueries = 0
 	var searchQueries = 0
 	var reverseProxy = 0
-	var cacheHitRate = 0
+	var cacheHitRate = 0.0
 	var servers = map[string]bool{}
 	var totalError = 0.0
 	var errorRate = 0.0
@@ -62,17 +62,17 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 
 	//Cache Hit Rate
 	if webRequests + reverseProxy > 0 {
-		cacheHitRate = reverseProxy / (reverseProxy + webRequests)
+		cacheHitRate = math.Round(float64(reverseProxy) / float64(reverseProxy + webRequests) * 10000) / 100
 	}
 
 	//Error Rate
 	if webRequests > 0 {
-		errorRate = math.Round(totalError / float64(webRequests) * 10000)/100
+		errorRate = math.Round(totalError / float64(webRequests) * 10000) / 100
 	}
 
 	//Average CPU
 	if totalRequests > 0.0 {
-		averageCPU = totalCPU / totalRequests * 100
+		averageCPU = math.Round((totalCPU / totalRequests) * 10) / 10
 	}
 
 
@@ -158,7 +158,7 @@ func getWebRequests(data []map[string]interface{}) []interface{} {
 	return retData
 }
 
-func getHosts(data []map[string]interface{}) []interface{} {
+func getHosts(data []map[string]interface{}) []map[string]interface{} {
 	type host struct {
 		Name   string
 		EventCount int
@@ -175,27 +175,29 @@ func getHosts(data []map[string]interface{}) []interface{} {
 
 	// Count the number of events for each host and put them into the map
 	for _, e := range data {
-		if _, d := hostData[e["server_id"].(string)]; !d {
-			hostData[e["server_id"].(string)] = &host{
-				e["server_id"].(string),
-				0,
-				0,
-				0,
-				0,
-				0,
-				0,
-				map[string]interface{}{ // Default
-					"type": "system",
-					"timestamp": int64(0),
-					"server_id": e["server_id"].(string),
-					"cpu_usage": 0.0,
-					"memory_usage": 0.0,
-					"memory_capacity": 0.0,
-				},
+		if e["type"] == "web_request" {
+			if _, d := hostData[e["server_id"].(string)]; !d {
+				hostData[e["server_id"].(string)] = &host{
+					e["server_id"].(string),
+					0,
+					0,
+					0,
+					0,
+					0,
+					0,
+					map[string]interface{}{ // Default
+						"type":            "system",
+						"timestamp":       int64(0),
+						"server_id":       e["server_id"].(string),
+						"cpu_usage":       0.0,
+						"memory_usage":    0.0,
+						"memory_capacity": 0.0,
+					},
+				}
 			}
-		}
 
-		hostData[e["server_id"].(string)].EventCount++
+			hostData[e["server_id"].(string)].EventCount++
+		}
 	}
 
 	// Copy the pointers to a slice so we can sort them and get the top entries
@@ -219,7 +221,7 @@ func getHosts(data []map[string]interface{}) []interface{} {
 	for _, host := range ss {
 		hostData[host.Name] = host
 	}
-	
+
 	// Go through the events and calculate the relevant statistics
 	for _, e := range data {
 		hData, exists := hostData[e["server_id"].(string)]
@@ -256,12 +258,12 @@ func getHosts(data []map[string]interface{}) []interface{} {
 		}
 	}
 
-	var retData []interface{}
+	var retData []map[string]interface{}
 
 	for _, h := range hostData {
 		var minuteRange = float64(h.NewestRequestTime - h.OldestRequestTime) / 1000 / 60
 
-		var throughput, responseTime = 0, 0
+		var throughput, responseTime, errorRate = 0, 0, 0.0
 
 		if minuteRange != 0 {
 			throughput = int(float64(h.TotalRequests) / minuteRange)
@@ -269,13 +271,14 @@ func getHosts(data []map[string]interface{}) []interface{} {
 
 		if h.TotalRequests != 0 {
 			responseTime = h.TotalResponseTime / h.TotalRequests
+			errorRate = math.Round((float64(h.ErrorRequests) / float64(h.TotalRequests)) * 10000) / 100
 		}
 
 		retData = append(retData, map[string]interface{}{
 			"name": h.Name,
-			"errorRate": math.Round((float64(h.ErrorRequests) / float64(h.TotalRequests)) * 10000) / 100,
-			"memoryUsage": h.LastSystemEvent["memory_usage"].(float64),
-			"memoryCapacity": h.LastSystemEvent["memory_capacity"].(float64),
+			"errorRate": errorRate,
+			"memoryUsage": h.LastSystemEvent["memory_usage"].(float64) * 1000,
+			"memoryCapacity": h.LastSystemEvent["memory_capacity"].(float64) * 1000,
 			"cpuUsage": h.LastSystemEvent["cpu_usage"].(float64),
 			"throughput": throughput,
 			"responseTime": responseTime,

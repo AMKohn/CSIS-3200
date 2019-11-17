@@ -47,9 +47,27 @@ func GetServerCluster() []Server {
 
 	var servers []Server
 
+	var webNames = [15]string{
+		"Natty Narwhal",
+		"Oneiric Ocelot",
+		"Precise Pangolin",
+		"Quantal Quetzal",
+		"Raring Ringtail",
+		"Saucy Salamander",
+		"Trusty Tahr",
+		"Utopic Unicorn",
+		"Vivid Vervet",
+		"Wily Werewolf",
+		"Xenial Xerus",
+		"Yakkety Yak",
+		"Zesty Zapus",
+		"Artful Aardvark",
+		"Bionic Beaver",
+	}
+
 	// Add 15 web servers
 	for i := 32; i < 47; i++ {
-		servers = append(servers, WebServer{BaseServer{"app-0" + strconv.Itoa(i), (rand.Intn(40) + 1) * 10, 4}})
+		servers = append(servers, WebServer{BaseServer{"app-0" + strconv.Itoa(i) + ": " + webNames[i - 32], (rand.Intn(40) + 1) * 10, 4}})
 	}
 
 	// 3 DB servers
