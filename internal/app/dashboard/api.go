@@ -43,7 +43,7 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 		"databaseQueries":  databaseQueries,
 		"searchQueries":    searchQueries,
 		"cacheHitRate":     cacheHitRate,
-		"liveServers":      37,
+		"liveServers":      calculateLiveServers(data),
 		"cpuUsage":         averageCPU(data),
 		"messageRate":      msgPerSec(data),
 		"webResponseTime":  averageResponseTimes(data),
@@ -320,6 +320,10 @@ func averageCPU(data []map[string]interface{}) float64{
 
 func msgPerSec(data []map[string]interface{}) float64 {
 	// The messages are sorted, so the first is the oldest and newest - oldest = time range
+	if len(data) == 0 {
+		return 0
+	}
+
 	return float64(len(data)) / (float64(data[len(data) - 1]["timestamp"].(int64) - data[0]["timestamp"].(int64)) / 1000)
 }
 
@@ -345,9 +349,11 @@ func averageErrorRate(data []map[string]interface{}) float64{
 
 
 func calculateLiveServers(data []map[string]interface{}) int{
-	var servers map[string]bool
+	var servers = map[string]bool{}
 
-	
+	for _, i := range data {
+		servers[i["server_id"].(string)] = true
+	}
 
 	return len(servers)
 }
