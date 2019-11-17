@@ -86,7 +86,8 @@
 
     renderTemplates(window.initData);
 
-    const updateData = () => {
+    // Update every 30 seconds
+    setInterval(() => {
         fetch("/api/getData")
             .then(response => response.json())
             .then(d => {
@@ -96,10 +97,5 @@
 
                 renderTemplates(d);
             });
-    };
-
-    // Update every 30 seconds
-    setInterval(updateData, 30 * 1000);
-
-    updateData();
+    }, 30 * 1000);
 })();
