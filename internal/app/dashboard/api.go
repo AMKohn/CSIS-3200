@@ -17,11 +17,38 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 	var searchQueries = 0
 	var reverseProxy = 0
 	var cacheHitRate = 0
+	var servers = map[string]bool{}
+	var totalError = 0.0
+	var errorRate = 0.0
+	var totalCPU = 0.0
+	var totalRequests = 0.0
+	var averageCPU = 0.0
+	var totalResponseTime = 0
+	var averageResponse = 0
 
 	for _, i := range data {
+		servers[i["server_id"].(string)] = true
+
+		//Calculating Error Rate
+		if i["type"] == "web_request" {
+			if i["status_code"].(float64) >= 400 {
+				totalError++
+			}
+		}
+
+		//Calculating average CPU
+		if i["type"].(string) == "system" && i["cpu_usage"] != nil {
+			totalCPU += i["cpu_usage"].(float64)
+			totalRequests++
+		}
+
+		//Calculating Average Response Time
 		if i["type"] == "web_request"{
+			totalResponseTime += int(i["response_time"].(float64))
 			webRequests++
 		}
+
+		//General Stat data
 		if i["type"] == "database"{
 			databaseQueries++
 		}
@@ -33,22 +60,39 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 		}
 	}
 
-	if webRequests + reverseProxy == 0 {
-		cacheHitRate = 0
-	} else {
+	//Cache Hit Rate
+	if webRequests + reverseProxy > 0 {
 		cacheHitRate = reverseProxy / (reverseProxy + webRequests)
 	}
+
+	//Error Rate
+	if webRequests > 0 {
+		errorRate = math.Round(totalError / float64(webRequests) * 10000)/100
+	}
+
+	//Average CPU
+	if totalRequests > 0.0 {
+		averageCPU = totalCPU / totalRequests * 100
+	}
+
+
+	//Average Response Time
+	if webRequests > 0 {
+		averageResponse = totalResponseTime / webRequests
+	}
+
+
 
 	return map[string]interface{}{
 		"webRequests":      webRequests,
 		"databaseQueries":  databaseQueries,
 		"searchQueries":    searchQueries,
 		"cacheHitRate":     cacheHitRate,
-		"liveServers":      calculateLiveServers(data),
-		"cpuUsage":         averageCPU(data),
+		"liveServers":      len(servers),
+		"cpuUsage":         averageCPU,
 		"messageRate":      msgPerSec(data),
-		"webResponseTime":  averageResponseTimes(data),
-		"overallErrorRate": averageErrorRate(data),
+		"webResponseTime":  averageResponse,
+		"overallErrorRate": errorRate,
 	}
 }
 
@@ -329,38 +373,6 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(jsonData)
 }
 
-func averageResponseTimes(data []map[string]interface{}) int{
-	var totalResponseTime = 0
-	var requests = 0
-	for _, i := range data {
-		if i["type"] == "web_request"{
-			totalResponseTime += int(i["response_time"].(float64))
-			requests++
-		}
-	}
-
-	if requests == 0 {
-		return 0
-	}
-
-	return totalResponseTime / requests
-}
-
-
-func averageCPU(data []map[string]interface{}) float64{
-	var totalCPU = 0.0
-	var totalRequests = 0.0
-	for _, i := range data {
-		if i["type"].(string) == "system" && i["cpu_usage"] != nil {
-			totalCPU += i["cpu_usage"].(float64)
-			totalRequests++
-		}
-	}
-	if totalRequests > 0.0 {
-		return totalCPU/totalRequests * 100
-	}
-	return 0.0
-}
 
 func msgPerSec(data []map[string]interface{}) float64 {
 	// The messages are sorted, so the first is the oldest and newest - oldest = time range
@@ -371,33 +383,3 @@ func msgPerSec(data []map[string]interface{}) float64 {
 	return float64(len(data)) / (float64(data[len(data) - 1]["timestamp"].(int64) - data[0]["timestamp"].(int64)) / 1000)
 }
 
-func averageErrorRate(data []map[string]interface{}) float64{
-	var totalError = 0.0
-	var totalMessage = 0.0
-
-	for _, i := range data {
-		if i["type"] == "webRequest" {
-			if i["status_code"].(float64) >= 400 {
-				totalError++
-			}
-			totalMessage++
-		}
-	}
-
-	if totalMessage == 0{
-		return 0.0
-	}
-
-	return totalError / totalMessage
-}
-
-
-func calculateLiveServers(data []map[string]interface{}) int{
-	var servers = map[string]bool{}
-
-	for _, i := range data {
-		servers[i["server_id"].(string)] = true
-	}
-
-	return len(servers)
-}
