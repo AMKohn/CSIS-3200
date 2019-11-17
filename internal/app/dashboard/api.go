@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"sort"
+	"strconv"
 	"time"
 )
 
@@ -52,28 +53,65 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 }
 
 func getWebRequests(data []map[string]interface{}) []interface{} {
-	return []interface{}{map[string]interface{}{
-		"path": "get /",
-		"time": "312 ms",
-	}, map[string]interface{}{
-		"path": "post /contact",
-		"time": "268 ms",
-	}, map[string]interface{}{
-		"path": "get /",
-		"time": "312 ms",
-	}, map[string]interface{}{
-		"path": "post /contact",
-		"time": "268 ms",
-	}, map[string]interface{}{
-		"path": "get /",
-		"time": "312 ms",
-	}, map[string]interface{}{
-		"path": "post /contact",
-		"time": "268 ms",
-	}, map[string]interface{}{
-		"path": "get /",
-		"time": "312 ms",
-	}}
+	type request struct {
+		Signature string
+		TotalRequests int
+		TotalResponseTime int
+		AverageResponseTime int
+	}
+
+	// Use pointers to requests to allow updating the struct, see https://stackoverflow.com/a/32751792/900747
+	var requests = map[string]*request{}
+
+	// Sum the statistics for each request path
+	for _, e := range data {
+		if e["type"] == "web_request" {
+			signature := e["request_type"].(string) + " " + e["path"].(string)
+
+			if _, d := requests[signature]; !d {
+				requests[signature] = &request{
+					signature,
+					0,
+					0,
+					0,
+				}
+			}
+
+			requests[signature].TotalRequests++
+			requests[signature].TotalResponseTime += int(e["response_time"].(float64))
+		}
+	}
+
+	// Go through the events and calculate the relevant statistics
+	for _, e := range requests {
+		e.AverageResponseTime = e.TotalResponseTime / e.TotalRequests
+	}
+
+	// Copy the pointers to a slice so we can sort them and get the top entries
+	var ss []*request
+	for _, v := range requests {
+		ss = append(ss, v)
+	}
+
+	sort.Slice(ss, func(i, j int) bool {
+		return ss[i].AverageResponseTime > ss[j].AverageResponseTime
+	})
+
+	// Only keep the top seven slowest requests
+	if len(ss) > 7 {
+		ss = ss[:7]
+	}
+
+	var retData []interface{}
+
+	for _, r := range ss {
+		retData = append(retData, map[string]interface{}{
+			"path": r.Signature,
+			"time": strconv.Itoa(r.AverageResponseTime) + " ms",
+		})
+	}
+
+	return retData
 }
 
 func getHosts(data []map[string]interface{}) []interface{} {
