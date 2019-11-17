@@ -1,11 +1,12 @@
 package processor
 
 import (
+	Mock "csis3200/mock/public"
 	"time"
 )
 
-// Pre-allocate memory for 10k messages to avoid costlier dynamic resizing at smaller intervals
-var messagesDb = make([]map[string]interface{}, 0, 10000)
+// Load mock data
+var messagesDb = Mock.GetInitRequests(5)
 
 func GetRecentData() []map[string]interface{} {
 	timeStamp := time.Now().Add(time.Duration(-30) * time.Minute).UnixNano() / 1000000

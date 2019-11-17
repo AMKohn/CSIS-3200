@@ -24,7 +24,7 @@ func getRandomWebRequest() string {
 		"response_time": `, rand.Intn(300) + 20, `,
 		"ip_address": "10.0.0.1",
 		"user_agent": ""
-	}`);
+	}`)
 }
 
 func main() {

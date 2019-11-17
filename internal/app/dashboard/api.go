@@ -258,31 +258,35 @@ func getResponseTimes(data []map[string]interface{}) []interface{} {
 }
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-
 	w.Header().Set("Content-Type", "application/json")
 
 	data := processor.GetRecentData()
 
-	messagesTime := time.Since(start)
-
 	jsonData := map[string]interface{}{
-		"messagesLast30":len(data),
-		"stats":         getStats(data),
-		"webRequests":   getWebRequests(data),
-		"hosts":         getHosts(data),
-		"responseTimes": getResponseTimes(data),
+		"messagesLast30": len(data),
 	}
 
-	statsTime := time.Since(start) - messagesTime
+	{
+		var statsStart = time.Now()
+
+		jsonData["stats"] = getStats(data)
+		statsTime := time.Since(statsStart)
+
+		jsonData["webRequests"] = getWebRequests(data)
+		webTime := time.Since(statsStart) - statsTime
+
+		jsonData["hosts"] = getHosts(data)
+		hostsTime := time.Since(statsStart) - statsTime - webTime
+
+		jsonData["responseTimes"] = getResponseTimes(data)
+		respTime := time.Since(statsStart) - statsTime - webTime - hostsTime
+
+		fmt.Printf(
+			"Dashboard API stats compiling took %v for %d messages. %v for main stats, %v for web requests, %v for hosts, %v for response times\n",
+			time.Since(statsStart), jsonData["messagesLast30"].(int), statsTime, webTime, hostsTime, respTime)
+	}
 
 	_ = json.NewEncoder(w).Encode(jsonData)
-
-	jsonTime := time.Since(start) - statsTime -  messagesTime
-
-	fmt.Printf(
-		"Dashboard API request took %v to process. %v to get %d messages, %v to get stats, %v to encode JSON\n",
-		time.Since(start), messagesTime, jsonData["messagesLast30"].(int), statsTime, jsonTime)
 }
 
 func averageResponseTimes(data []map[string]interface{}) int{
