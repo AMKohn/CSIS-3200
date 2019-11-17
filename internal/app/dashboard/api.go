@@ -73,7 +73,7 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 
 	//Error Rate
 	if totalMessage > 0 {
-		errorRate = math.Round(totalError / totalMessage * 100) / 100
+		errorRate = math.Round(totalError / totalMessage * 10000)/100
 	}
 
 	//Average CPU
