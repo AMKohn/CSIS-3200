@@ -17,8 +17,11 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 	var searchQueries = 0
 	var reverseProxy = 0
 	var cacheHitRate = 0
+	var servers = map[string]bool{}
 
 	for _, i := range data {
+		servers[i["server_id"].(string)] = true
+
 		if i["type"] == "web_request"{
 			webRequests++
 		}
@@ -44,7 +47,7 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 		"databaseQueries":  databaseQueries,
 		"searchQueries":    searchQueries,
 		"cacheHitRate":     cacheHitRate,
-		"liveServers":      calculateLiveServers(data),
+		"liveServers":     len(servers),
 		"cpuUsage":         averageCPU(data),
 		"messageRate":      msgPerSec(data),
 		"webResponseTime":  averageResponseTimes(data),
@@ -389,13 +392,3 @@ func averageErrorRate(data []map[string]interface{}) float64{
 	return totalError / totalMessage
 }
 
-
-func calculateLiveServers(data []map[string]interface{}) int{
-	var servers = map[string]bool{}
-
-	for _, i := range data {
-		servers[i["server_id"].(string)] = true
-	}
-
-	return len(servers)
-}
