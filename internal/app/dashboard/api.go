@@ -217,10 +217,14 @@ func getHosts(data []map[string]interface{}) []interface{} {
 	for _, h := range hostData {
 		var minuteRange = float64(h.NewestRequestTime - h.OldestRequestTime) / 1000 / 60
 
-		var throughput = 0
+		var throughput, responseTime = 0, 0
 
 		if minuteRange != 0 {
 			throughput = int(float64(h.TotalRequests) / minuteRange)
+		}
+
+		if h.TotalRequests != 0 {
+			responseTime = h.TotalResponseTime / h.TotalRequests
 		}
 
 		retData = append(retData, map[string]interface{}{
@@ -230,7 +234,7 @@ func getHosts(data []map[string]interface{}) []interface{} {
 			"memoryCapacity": h.LastSystemEvent["memory_capacity"].(float64),
 			"cpuUsage": h.LastSystemEvent["cpu_usage"].(float64),
 			"throughput": throughput,
-			"responseTime": h.TotalResponseTime / h.TotalRequests,
+			"responseTime": responseTime,
 		})
 	}
 
@@ -304,25 +308,23 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		"messagesLast30": len(data),
 	}
 
-	{
-		var statsStart = time.Now()
+	var statsStart = time.Now()
 
-		jsonData["stats"] = getStats(data)
-		statsTime := time.Since(statsStart)
+	jsonData["stats"] = getStats(data)
+	statsTime := time.Since(statsStart)
 
-		jsonData["webRequests"] = getWebRequests(data)
-		webTime := time.Since(statsStart) - statsTime
+	jsonData["webRequests"] = getWebRequests(data)
+	webTime := time.Since(statsStart) - statsTime
 
-		jsonData["hosts"] = getHosts(data)
-		hostsTime := time.Since(statsStart) - statsTime - webTime
+	jsonData["hosts"] = getHosts(data)
+	hostsTime := time.Since(statsStart) - statsTime - webTime
 
-		jsonData["responseTimes"] = getResponseTimes(data)
-		respTime := time.Since(statsStart) - statsTime - webTime - hostsTime
+	jsonData["responseTimes"] = getResponseTimes(data)
+	respTime := time.Since(statsStart) - statsTime - webTime - hostsTime
 
-		fmt.Printf(
-			"Dashboard API stats compiling took %v for %d messages. %v for main stats, %v for web requests, %v for hosts, %v for response times\n",
-			time.Since(statsStart), jsonData["messagesLast30"].(int), statsTime, webTime, hostsTime, respTime)
-	}
+	fmt.Printf(
+		"Dashboard API stats compiling took %v for %d messages. %v for main stats, %v for web requests, %v for hosts, %v for response times\n",
+		time.Since(statsStart), jsonData["messagesLast30"].(int), statsTime, webTime, hostsTime, respTime)
 
 	_ = json.NewEncoder(w).Encode(jsonData)
 }

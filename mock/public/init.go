@@ -30,6 +30,7 @@ func getWebRequest(ts int64) map[string]interface{} {
 
 // Gets the requests to pre-populate the processor messagesDb
 func GetInitRequests(minutes int) []map[string]interface{} {
+	var servers = GetServerCluster()
 	var start = time.Now()
 
 	var retSlice []map[string]interface{}
@@ -37,20 +38,27 @@ func GetInitRequests(minutes int) []map[string]interface{} {
 	var startTs = time.Now().Add(time.Duration(-minutes) * time.Minute).UnixNano() / 1000000
 	var endTs = time.Now().UnixNano() / 1000000
 
-	// Messages are normally sent 8 every 10 ms, this simulates that for 30 minutes of data
-	for ts := startTs; ts < endTs; ts += 10 {
-		retSlice = append(retSlice,
-			getWebRequest(ts),
-			getWebRequest(ts),
-			getWebRequest(ts),
-			getWebRequest(ts),
-			getWebRequest(ts),
-			getWebRequest(ts),
-			getWebRequest(ts),
-			getWebRequest(ts))
+	var lastTs = int64(0)
+
+	for ts := startTs; ts < endTs; ts += 100 {
+		for _, s := range servers {
+			var rate = s.GetRequestRate()
+
+			// Convert RPM to the right number to send every 10 ms
+			for i := 0; i < rate / 60 / 10; i++ {
+				retSlice = append(retSlice, s.GetLogMessage(ts))
+			}
+
+			// If it's been more than 1 second, send a health ping too
+			if ts - lastTs > 1000 {
+				lastTs = ts
+
+				retSlice = append(retSlice, s.GetSystemMessage(ts))
+			}
+		}
 	}
 
-	fmt.Printf("Generating %d minutes of mock messages took %v\n", minutes, time.Since(start))
+	fmt.Printf("Generating %d messages for %d minutes of mock data took %v\n", len(retSlice), minutes, time.Since(start))
 
 	return retSlice
 }

@@ -1,45 +1,43 @@
 package main
 
 import (
-	"fmt"
-	"math/rand"
+	P "csis3200/mock/public"
+	"encoding/json"
 	"net"
 	"time"
 )
 
-func getRandomWebRequest() string {
-	var statusCode = 200
-
-	// Only 10% of requests have non-200 status codes
-	if rand.Intn(10) == 1 {
-		statusCode = rand.Intn(5) * 100
-	}
-
-	return fmt.Sprint(`{
-		"type": "web_request",
-		"server_id": "app-`, rand.Intn(60) + 75, `",
-		"request_type": "GET",
-		"path": "/dashboard-`, rand.Intn(10), `",
-		"status_code": `, statusCode, `,
-		"response_time": `, rand.Intn(300) + 20, `,
-		"ip_address": "10.0.0.1",
-		"user_agent": ""
-	}`)
-}
-
 func main() {
+	var servers = P.GetServerCluster()
+
 	Conn, _ := net.DialUDP("udp", nil, &net.UDPAddr{IP: []byte{127, 0, 0, 1}, Port: 1337, Zone: ""})
 
 	defer Conn.Close()
 
-	// Send 8 messages every 10 ms. This translates to 8 * 100 * 60 = 48,000 RPM
-	limiter := time.Tick(10 * time.Millisecond)
+	// Send messages every 100 ms
+	limiter := time.Tick(100 * time.Millisecond)
+
+	var lastTs = int64(0)
 
 	for {
 		<-limiter
 
-		for i := 1; i < 8; i++ {
-			_, _ = Conn.Write([]byte(getRandomWebRequest()))
+		var ts = time.Now().UnixNano() / 1000000
+
+		for _, s := range servers {
+			var rate = s.GetRequestRate()
+
+			// Convert RPM to the right number to send every 10 ms
+			for i := 0; i < rate / 60 / 10; i++ {
+				_ = json.NewEncoder(Conn).Encode(s.GetLogMessage(ts))
+			}
+
+			// If it's been more than 1 second, send a health ping too
+			if ts - lastTs > 1000 {
+				lastTs = ts
+
+				_ = json.NewEncoder(Conn).Encode(s.GetSystemMessage(ts))
+			}
 		}
 	}
 }
