@@ -19,13 +19,11 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 	var cacheHitRate = 0
 	var servers = map[string]bool{}
 	var totalError = 0.0
-	var totalMessage = 0.0
 	var errorRate = 0.0
 	var totalCPU = 0.0
 	var totalRequests = 0.0
 	var averageCPU = 0.0
 	var totalResponseTime = 0
-	var requests = 0
 	var averageResponse = 0
 
 	for _, i := range data {
@@ -36,7 +34,6 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 			if i["status_code"].(float64) >= 400 {
 				totalError++
 			}
-			totalMessage++
 		}
 
 		//Calculating average CPU
@@ -48,13 +45,10 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 		//Calculating Average Response Time
 		if i["type"] == "web_request"{
 			totalResponseTime += int(i["response_time"].(float64))
-			requests++
+			webRequests++
 		}
 
 		//General Stat data
-		if i["type"] == "web_request"{
-			webRequests++
-		}
 		if i["type"] == "database"{
 			databaseQueries++
 		}
@@ -72,8 +66,8 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 	}
 
 	//Error Rate
-	if totalMessage > 0 {
-		errorRate = math.Round(totalError / totalMessage * 10000)/100
+	if webRequests > 0 {
+		errorRate = math.Round(totalError / float64(webRequests) * 10000)/100
 	}
 
 	//Average CPU
@@ -83,8 +77,8 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 
 
 	//Average Response Time
-	if requests > 0 {
-		averageResponse = totalResponseTime / requests
+	if webRequests > 0 {
+		averageResponse = totalResponseTime / webRequests
 	}
 
 
