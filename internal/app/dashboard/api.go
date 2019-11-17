@@ -3,6 +3,7 @@ package dashboard
 import (
 	"csis3200/internal/app/processor"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"sort"
@@ -32,10 +33,10 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 		}
 	}
 
-	if webRequests == 0{
+	if webRequests + reverseProxy == 0 {
 		cacheHitRate = 0
 	} else {
-		cacheHitRate = reverseProxy / webRequests
+		cacheHitRate = reverseProxy / (reverseProxy + webRequests)
 	}
 
 	return map[string]interface{}{
@@ -194,16 +195,16 @@ func getHosts(data []map[string]interface{}) []interface{} {
 					hData.ErrorRequests++
 				}
 
-				if hData.OldestRequestTime > e["timestamp"].(int64) {
+				if hData.OldestRequestTime == 0 || hData.OldestRequestTime > e["timestamp"].(int64) {
 					hData.OldestRequestTime = e["timestamp"].(int64)
-				} else if hData.NewestRequestTime < e["timestamp"].(int64) {
+				} else if hData.NewestRequestTime == 0 || hData.NewestRequestTime < e["timestamp"].(int64) {
 					hData.NewestRequestTime = e["timestamp"].(int64)
 				}
 
 				break
 
 			case "system":
-				if hData.LastSystemEvent["timestamp"].(int64) <= e["timestamp"].(int64) {
+				if hData.LastSystemEvent["timestamp"].(int64) == 0 || hData.LastSystemEvent["timestamp"].(int64) <= e["timestamp"].(int64) {
 					hData.LastSystemEvent = e
 				}
 
@@ -214,7 +215,13 @@ func getHosts(data []map[string]interface{}) []interface{} {
 	var retData []interface{}
 
 	for _, h := range hostData {
-		var minuteRange = int((h.NewestRequestTime - h.OldestRequestTime) / 1000 / 60)
+		var minuteRange = float64(h.NewestRequestTime - h.OldestRequestTime) / 1000 / 60
+
+		var throughput = 0
+
+		if minuteRange != 0 {
+			throughput = int(float64(h.TotalRequests) / minuteRange)
+		}
 
 		retData = append(retData, map[string]interface{}{
 			"name": h.Name,
@@ -222,7 +229,7 @@ func getHosts(data []map[string]interface{}) []interface{} {
 			"memoryUsage": h.LastSystemEvent["memory_usage"].(float64),
 			"memoryCapacity": h.LastSystemEvent["memory_capacity"].(float64),
 			"cpuUsage": h.LastSystemEvent["cpu_usage"].(float64),
-			"throughput": h.TotalRequests / minuteRange,
+			"throughput": throughput,
 			"responseTime": h.TotalResponseTime / h.TotalRequests,
 		})
 	}
@@ -294,39 +301,58 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	data := processor.GetRecentData()
 
 	jsonData := map[string]interface{}{
-		"messagesLast30":len(data),
-		"stats":         getStats(data),
-		"webRequests":   getWebRequests(data),
-		"hosts":         getHosts(data),
-		"responseTimes": getResponseTimes(data),
+		"messagesLast30": len(data),
+	}
+
+	{
+		var statsStart = time.Now()
+
+		jsonData["stats"] = getStats(data)
+		statsTime := time.Since(statsStart)
+
+		jsonData["webRequests"] = getWebRequests(data)
+		webTime := time.Since(statsStart) - statsTime
+
+		jsonData["hosts"] = getHosts(data)
+		hostsTime := time.Since(statsStart) - statsTime - webTime
+
+		jsonData["responseTimes"] = getResponseTimes(data)
+		respTime := time.Since(statsStart) - statsTime - webTime - hostsTime
+
+		fmt.Printf(
+			"Dashboard API stats compiling took %v for %d messages. %v for main stats, %v for web requests, %v for hosts, %v for response times\n",
+			time.Since(statsStart), jsonData["messagesLast30"].(int), statsTime, webTime, hostsTime, respTime)
 	}
 
 	_ = json.NewEncoder(w).Encode(jsonData)
 }
 
 func averageResponseTimes(data []map[string]interface{}) int{
-	var time = 0
+	var totalResponseTime = 0
 	var requests = 0
 	for _, i := range data {
-		if i["type"] == "webRequest"{
-			time += int(i["responseTime"].(float64))
+		if i["type"] == "web_request"{
+			totalResponseTime += int(i["response_time"].(float64))
 			requests++
 		}
 	}
-	if requests == 0{
+
+	if requests == 0 {
 		return 0
 	}
 
-	return time / requests
+	return totalResponseTime / requests
 }
 
 
 func averageCPU(data []map[string]interface{}) float64{
 	var totalCPU = 0.0
 	var totalRequests = 0.0
-	for _, i := range data{
-		totalCPU += i["cpuUsage"].(float64)
-		totalRequests ++
+	for _, i := range data {
+		if i["type"].(string) == "system" && i["cpu_usage"] != nil {
+			totalCPU += i["cpu_usage"].(float64)
+			totalRequests++
+		}
 	}
 	if totalRequests > 0.0 {
 		return totalCPU/totalRequests * 100
@@ -334,9 +360,13 @@ func averageCPU(data []map[string]interface{}) float64{
 	return 0.0
 }
 
-func msgPerSec(data []map[string]interface{}) float64{
+func msgPerSec(data []map[string]interface{}) float64 {
+	// The messages are sorted, so the first is the oldest and newest - oldest = time range
+	if len(data) == 0 {
+		return 0
+	}
 
-	return float64(len(data)) / 1800
+	return float64(len(data)) / (float64(data[len(data) - 1]["timestamp"].(int64) - data[0]["timestamp"].(int64)) / 1000)
 }
 
 func averageErrorRate(data []map[string]interface{}) float64{
@@ -344,7 +374,7 @@ func averageErrorRate(data []map[string]interface{}) float64{
 	var totalMessage = 0.0
 
 	for _, i := range data {
-		if i["type"] == "webRequest"{
+		if i["type"] == "webRequest" {
 			if i["status_code"].(float64) >= 400 {
 				totalError++
 			}
@@ -363,8 +393,8 @@ func averageErrorRate(data []map[string]interface{}) float64{
 func calculateLiveServers(data []map[string]interface{}) int{
 	var servers = map[string]bool{}
 
-	for _, e := range data {
-		servers[e["server_id"].(string)] = true
+	for _, i := range data {
+		servers[i["server_id"].(string)] = true
 	}
 
 	return len(servers)

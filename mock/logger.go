@@ -19,12 +19,12 @@ func getRandomWebRequest() string {
 		"type": "web_request",
 		"server_id": "app-`, rand.Intn(60) + 75, `",
 		"request_type": "GET",
-		"url": "/dashboard",
+		"path": "/dashboard-`, rand.Intn(10), `",
 		"status_code": `, statusCode, `,
 		"response_time": `, rand.Intn(300) + 20, `,
 		"ip_address": "10.0.0.1",
 		"user_agent": ""
-	}`);
+	}`)
 }
 
 func main() {
