@@ -42,7 +42,7 @@ func getStats(data []map[string]interface{}) map[string]interface{} {
 		"databaseQueries":  databaseQueries,
 		"searchQueries":    searchQueries,
 		"cacheHitRate":     cacheHitRate,
-		"liveServers":      37,
+		"liveServers":      calculateLiveServers(data),
 		"cpuUsage":         averageCPU(data),
 		"messageRate":      msgPerSec(data),
 		"webResponseTime":  averageResponseTimes(data),
