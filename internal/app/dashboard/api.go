@@ -323,9 +323,11 @@ func averageErrorRate(data []map[string]interface{}) float64{
 
 
 func calculateLiveServers(data []map[string]interface{}) int{
-	var servers map[string]bool
+	var servers = map[string]bool{}
 
-	
+	for _, e := range data {
+		servers[e["server_id"].(string)] = true
+	}
 
 	return len(servers)
 }
