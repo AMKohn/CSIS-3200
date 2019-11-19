@@ -106,7 +106,7 @@
     };
 
     // Update every 30 seconds
-    setInterval(updateData, 30 * 1000);
+    setInterval(updateData, 10 * 1000);
 
     updateData();
 })();
