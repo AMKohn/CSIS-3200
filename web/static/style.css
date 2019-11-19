@@ -1,8 +1,8 @@
+@charset "UTF-8";
+
 /*---------------------------------------------
 	/ Fonts
 */
-@charset "UTF-8";
-
 @import url(http://fonts.googleapis.com/css?family=Open+Sans:400,600,300,700|Roboto:300,400,500,600,700);
 
 
@@ -45,30 +45,10 @@ table {
 }
 
 ul { list-style: none; }
-input, select { vertical-align: middle; }
-input[type="radio"] { vertical-align: text-bottom; }
-input[type="checkbox"] { vertical-align: bottom; }
-
-sub, sup {
-	font-size: 75%;
-	line-height: 0;
-	position: relative;
-}
-
-sup { top: -0.5em; }
-sub { bottom: -0.25em; }
 
 label, button, input[type="button"],
 input[type="submit"], input[type="file"] {
 	cursor: pointer;
-}
-
-.cf:after,
-.clearfix:after {
-	height: 0;
-	clear: both;
-	content: "";
-	display: block;
 }
 
 a {
@@ -103,80 +83,6 @@ a:hover {
 
 ::-webkit-scrollbar-thumb:active {
 	background: rgba(0, 0, 0, .3);
-}
-
-
-
-
-
-
-
-/*---------------------------------------------
-	/ Forms / Buttons
-*/
-.btn,
-button,
-.btn-before:before,
-input[type="button"],
-input[type="submit"] {
-	color: #FFF;
-	font-size: 14px;
-	cursor: pointer;
-	font-weight: 300;
-	padding: 6px 12px;
-	text-align: center;
-	border-radius: 2px;
-	background: #5BA4E5;
-	outline: 0!important;
-	vertical-align: middle;
-	border: 1px rgba(0, 0, 0, 0);
-	font-family: Open Sans, sans-serif;
-}
-
-.btn:hover,
-button:hover,
-.btn-before:hover:before,
-input[type="button"]:hover,
-input[type="submit"]:hover,
-
-.btn:focus,
-button:focus,
-.btn-before:focus:before,
-input[type="button"]:focus,
-input[type="submit"]:focus,
-
-.btn:active,
-button:active,
-.btn-before:active:before,
-input[type="button"]:active,
-input[type="submit"]:active {
-	background: #2F8CDE;
-}
-
-.btn:active,
-button:active,
-.btn-before:active:before,
-input[type="button"]:active,
-input[type="submit"]:active {
-	box-shadow: rgba(0, 0, 0, .3) 0 1px 3px inset;
-}
-
-button.flat {
-	color: #333;
-	font-size: 13px;
-	background: none;
-	box-shadow: none;
-	font-weight: 600;
-	padding: 2px 12px;
-	text-transform: uppercase;
-}
-
-button.flat:hover {
-	color: #777;
-}
-
-button.flat:focus:not(:hover):not(:active) {
-	text-decoration: underline;
 }
 
 
@@ -251,22 +157,6 @@ article.widget {
 	font-size: 18px;
 }
 
-.widget > header .main-stat {
-	font-size: 16px;
-	font-weight: bold;
-	line-height: 32px;
-}
-
-.widget .more {
-	width: 100%;
-	display: block;
-	margin-top: 10px;
-	padding: 15px 30px;
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
-	border-top: 1px solid rgba(0, 0, 0, .05);
-}
-
 
 
 
@@ -274,41 +164,9 @@ article.widget {
 /*---------------------------------------------
 	/ Overview
 */
-.overview .view > span {
-	vertical-align: middle;
-}
-
-.overview .view select {
-	width: 140px;
-}
-
-.overview .view .picker {
-	display: none;
-}
-
-.overview .view .picker.visible {
-	display: inline-block;
-}
-
-.overview .picker input {
-	width: 100px;
-	border-width: 0;
-}
-
-.overview .picker input:focus {
-	border-width: 1px;
-}
-
-.overview .picker input.start {
-	text-align: right;
-}
-
-.overview .picker .to {
-	vertical-align: middle;
-}
-
 .overview .chart {
 	height: 350px;
+	margin: 0 5px;
 }
 
 .overview .stats {
@@ -347,8 +205,7 @@ article.widget {
 */
 .widget.list li {
 	font-size: 14px;
-	padding: 12px 15px;
-	padding-right: 20px;
+	padding: 12px 20px 12px 15px;
 	border-top: 1px solid #EFEFEF;
 }
 
@@ -364,44 +221,6 @@ article.widget {
 	float: right;
 	font-size: 15px;
 	font-weight: 700;
-}
-
-.widget.list li.main {
-	padding: 20px;
-	font-size: 18px;
-	padding-right: 25px;
-}
-
-.widget.list .main span {
-	font-size: 17px;
-}
-
-.widget.list li.hidden,
-.widget.list.compact li.hidden {
-	border: 0;
-	padding: 0;
-}
-
-.widget.list li.hidden ul {
-	height: 0;
-	overflow: hidden;
-	transition: height .3s ease-in-out;
-}
-
-.widget.list li.hidden ul.visible {
-	height: auto;
-}
-
-
-
-
-
-/*---------------------------------------------
-	/ Compact Lists
-*/
-.widget.list.compact li {
-	border: 0;
-	padding: 6px 15px;
 }
 
 

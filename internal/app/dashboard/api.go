@@ -11,91 +11,88 @@ import (
 	"time"
 )
 
+/**
+ * Calculates a number of general statistics. These are combined into a single function so they
+ * can share a single loop, which greatly increases efficiency
+ */
 func getStats(data []map[string]interface{}) map[string]interface{} {
-	var webRequests = 0
-	var databaseQueries = 0
-	var searchQueries = 0
-	var reverseProxy = 0
-	var cacheHitRate = 0.0
 	var servers = map[string]bool{}
-	var totalError = 0.0
-	var errorRate = 0.0
-	var totalCPU = 0.0
-	var totalRequests = 0.0
-	var averageCPU = 0.0
-	var totalResponseTime = 0
-	var averageResponse = 0
 
+	var totalErrors = 0.0
+	var totalCPU = 0.0
+	var totalResponseTime = 0
+
+	var counts = map[string]float64 {
+		"system": 0,
+		"web_request": 0,
+		"database": 0,
+		"search": 0,
+		"reverse_proxy": 0,
+	}
+
+	// Sum the statistics we'll need using a combined loop
 	for _, i := range data {
+		counts[i["type"].(string)]++
 		servers[i["server_id"].(string)] = true
 
-		//Calculating Error Rate
-		if i["type"] == "web_request" {
-			if i["status_code"].(float64) >= 400 {
-				totalError++
-			}
-		}
-
-		//Calculating average CPU
-		if i["type"].(string) == "system" && i["cpu_usage"] != nil {
+		// Average CPU
+		if i["type"] == "system" && i["cpu_usage"] != nil {
 			totalCPU += i["cpu_usage"].(float64)
-			totalRequests++
 		}
 
-		//Calculating Average Response Time
-		if i["type"] == "web_request"{
+		// Average Response Time
+		if i["type"] == "web_request" {
 			totalResponseTime += int(i["response_time"].(float64))
-			webRequests++
-		}
 
-		//General Stat data
-		if i["type"] == "database"{
-			databaseQueries++
-		}
-		if i["type"] == "search"{
-			searchQueries++
-		}
-		if i["type"] == "reverse_proxy"{
-			reverseProxy++
+			// Error rate
+			if i["status_code"].(float64) >= 400 {
+				totalErrors++
+			}
 		}
 	}
 
 	//Cache Hit Rate
-	if webRequests + reverseProxy > 0 {
-		cacheHitRate = math.Round(float64(reverseProxy) / float64(reverseProxy + webRequests) * 10000) / 100
+	var cacheHitRate = 0.0
+	if counts["web_request"] + counts["reverse_proxy"] > 0 {
+		cacheHitRate = math.Round(counts["reverse_proxy"] / (counts["reverse_proxy"] + counts["web_request"]) * 10000) / 100
 	}
 
-	//Error Rate
-	if webRequests > 0 {
-		errorRate = math.Round(totalError / float64(webRequests) * 10000) / 100
+	// Average response time and error rate
+	var errorRate = 0.0
+	var averageResponse = 0
+	if counts["web_request"] > 0 {
+		averageResponse = totalResponseTime / int(counts["web_request"])
+		errorRate = math.Round(totalErrors / counts["web_request"] * 10000) / 100
 	}
 
 	//Average CPU
-	if totalRequests > 0.0 {
-		averageCPU = math.Round((totalCPU / totalRequests) * 10) / 10
+	var averageCPU = 0.0
+	if counts["system"] > 0.0 {
+		averageCPU = math.Round((totalCPU / counts["system"]) * 10) / 10
 	}
 
-
-	//Average Response Time
-	if webRequests > 0 {
-		averageResponse = totalResponseTime / webRequests
+	// Messages per second
+	var perSecond = 0.0
+	if len(data) > 0 {
+		perSecond = float64(len(data)) / (float64(data[len(data) - 1]["timestamp"].(int64) - data[0]["timestamp"].(int64)) / 1000)
 	}
-
-
 
 	return map[string]interface{}{
-		"webRequests":      webRequests,
-		"databaseQueries":  databaseQueries,
-		"searchQueries":    searchQueries,
+		"webRequests":      counts["web_request"],
+		"databaseQueries":  counts["database"],
+		"searchQueries":    counts["search"],
 		"cacheHitRate":     cacheHitRate,
 		"liveServers":      len(servers),
 		"cpuUsage":         averageCPU,
-		"messageRate":      msgPerSec(data),
+		"messageRate":      perSecond,
 		"webResponseTime":  averageResponse,
 		"overallErrorRate": errorRate,
 	}
 }
 
+/**
+ * Returns the slowest 7 web requests
+ */
 func getWebRequests(data []map[string]interface{}) []interface{} {
 	type request struct {
 		Signature string
@@ -112,6 +109,7 @@ func getWebRequests(data []map[string]interface{}) []interface{} {
 		if e["type"] == "web_request" {
 			signature := e["request_type"].(string) + " " + e["path"].(string)
 
+			// Create a new request struct if it doesn't exist
 			if _, d := requests[signature]; !d {
 				requests[signature] = &request{
 					signature,
@@ -126,7 +124,7 @@ func getWebRequests(data []map[string]interface{}) []interface{} {
 		}
 	}
 
-	// Go through the events and calculate the relevant statistics
+	// Go through the events and calculate the average response time
 	for _, e := range requests {
 		e.AverageResponseTime = e.TotalResponseTime / e.TotalRequests
 	}
@@ -146,6 +144,7 @@ func getWebRequests(data []map[string]interface{}) []interface{} {
 		ss = ss[:7]
 	}
 
+	// Generate and return the final JSON-compatible output
 	var retData []interface{}
 
 	for _, r := range ss {
@@ -158,6 +157,9 @@ func getWebRequests(data []map[string]interface{}) []interface{} {
 	return retData
 }
 
+/**
+ * Gets the top 5 highest load hosts
+ */
 func getHosts(data []map[string]interface{}) []map[string]interface{} {
 	type host struct {
 		Name   string
@@ -173,30 +175,39 @@ func getHosts(data []map[string]interface{}) []map[string]interface{} {
 	// Use pointers to hosts to allow updating the struct, see https://stackoverflow.com/a/32751792/900747
 	var hostData = map[string]*host{}
 
-	// Count the number of events for each host and put them into the map
+	// Calculate the statistics for all hosts. This uses a single loop instead of one to find
+	// the top hosts and one to sum the statistics and is faster than just calculating the
+	// statistics for the top hosts
 	for _, e := range data {
-		if e["type"] == "web_request" {
-			if _, d := hostData[e["server_id"].(string)]; !d {
-				hostData[e["server_id"].(string)] = &host{
-					e["server_id"].(string),
-					0,
-					0,
-					0,
-					0,
-					0,
-					0,
-					map[string]interface{}{ // Default
-						"type":            "system",
-						"timestamp":       int64(0),
-						"server_id":       e["server_id"].(string),
-						"cpu_usage":       0.0,
-						"memory_usage":    0.0,
-						"memory_capacity": 0.0,
-					},
-				}
+		hData, exists := hostData[e["server_id"].(string)]
+
+		if !exists {
+			hostData[e["server_id"].(string)] = &host{}
+
+			hData = hostData[e["server_id"].(string)]
+
+			hData.Name = e["server_id"].(string)
+		}
+
+		hData.EventCount++
+
+		// The events are sorted, so we don't need to confirm that this system event is newer
+		if e["type"] == "system" {
+			hData.LastSystemEvent = e
+		} else if e["type"] == "web_request" {
+			hData.TotalRequests++
+			hData.TotalResponseTime += int(e["response_time"].(float64))
+
+			// This matches unsuccessful requests
+			if e["status_code"].(float64) >= 400 && e["status_code"].(float64) < 600 {
+				hData.ErrorRequests++
 			}
 
-			hostData[e["server_id"].(string)].EventCount++
+			if hData.OldestRequestTime == 0 || hData.OldestRequestTime > e["timestamp"].(int64) {
+				hData.OldestRequestTime = e["timestamp"].(int64)
+			} else if hData.NewestRequestTime == 0 || hData.NewestRequestTime < e["timestamp"].(int64) {
+				hData.NewestRequestTime = e["timestamp"].(int64)
+			}
 		}
 	}
 
@@ -206,8 +217,9 @@ func getHosts(data []map[string]interface{}) []map[string]interface{} {
 		ss = append(ss, v)
 	}
 
+	// Sort the hosts by CPU usage
 	sort.Slice(ss, func(i, j int) bool {
-		return ss[i].EventCount > ss[j].EventCount
+		return ss[i].LastSystemEvent["cpu_usage"].(float64) > ss[j].LastSystemEvent["cpu_usage"].(float64)
 	})
 
 	// Only keep the top five hosts
@@ -215,52 +227,10 @@ func getHosts(data []map[string]interface{}) []map[string]interface{} {
 		ss = ss[:5]
 	}
 
-	// And put them back into the hostData map so we can update them efficiently
-	hostData = map[string]*host{}
-
-	for _, host := range ss {
-		hostData[host.Name] = host
-	}
-
-	// Go through the events and calculate the relevant statistics
-	for _, e := range data {
-		hData, exists := hostData[e["server_id"].(string)]
-
-		// Skip the event if it's not from one of our top hosts
-		if !exists {
-			continue
-		}
-
-		switch e["type"] {
-			case "web_request":
-				hData.TotalRequests++
-				hData.TotalResponseTime += int(e["response_time"].(float64))
-
-				// This matches unsuccessful requests
-				if e["status_code"].(float64) >= 400 && e["status_code"].(float64) < 600 {
-					hData.ErrorRequests++
-				}
-
-				if hData.OldestRequestTime == 0 || hData.OldestRequestTime > e["timestamp"].(int64) {
-					hData.OldestRequestTime = e["timestamp"].(int64)
-				} else if hData.NewestRequestTime == 0 || hData.NewestRequestTime < e["timestamp"].(int64) {
-					hData.NewestRequestTime = e["timestamp"].(int64)
-				}
-
-				break
-
-			case "system":
-				if hData.LastSystemEvent["timestamp"].(int64) == 0 || hData.LastSystemEvent["timestamp"].(int64) <= e["timestamp"].(int64) {
-					hData.LastSystemEvent = e
-				}
-
-				break
-		}
-	}
-
+	// Generate the final JSON-compatible output and return
 	var retData []map[string]interface{}
 
-	for _, h := range hostData {
+	for _, h := range ss {
 		var minuteRange = float64(h.NewestRequestTime - h.OldestRequestTime) / 1000 / 60
 
 		var throughput, responseTime, errorRate = 0, 0, 0.0
@@ -288,67 +258,46 @@ func getHosts(data []map[string]interface{}) []map[string]interface{} {
 	return retData
 }
 
-func getResponseTimeRange(data []map[string]interface{}, startTime int64, endTime int64) int {
-	var totalTime int = 0
-	var numRequests int = 0
+/**
+ * Returns the average response times in 5 minute periods
+ */
+func getResponseTimes(data []map[string]interface{}) [7]int {
+	var times [7]int
+	var counts [7]int
+
+	var startTs = time.Now().Add(time.Duration(-30) * time.Minute).UnixNano() / 1000000
 
 	for _, e := range data {
-		inRange := false
+		// Buckets are (-32.5 m, -27.5 m), (-27.5 m, -22.5 m), etc. This calculates the bucket
+		// index based on the time differential
+		bucket := int(math.Round((float64(e["timestamp"].(int64) - startTs) / 1000 / 60) / 5))
 
-		// If we were passed a valid start time, use that
-		if startTime > 0 && endTime > 0 {
-			inRange = e["timestamp"].(int64) > startTime && e["timestamp"].(int64) <= endTime
-		}
-
-		if e["type"] == "web_request" && inRange {
-			totalTime += int(e["response_time"].(float64))
-			numRequests++
+		if bucket >= 0 && bucket <= 6 &&  e["type"] == "web_request" {
+			times[bucket] += int(e["response_time"].(float64))
+			counts[bucket]++
 		}
 	}
 
-	if numRequests > 0 {
-		return totalTime / numRequests
+	var averages [7]int
+
+	for i := 0; i < 7; i++ {
+		if counts[i] > 0 {
+			averages[i] = times[i] / counts[i]
+		}
 	}
 
-	return 0
+	return averages
 }
 
-func getResponseTimes(data []map[string]interface{}) []interface{} {
-	return []interface{}{
-		getResponseTimeRange(
-			data,
-			time.Now().Add(time.Duration(-325)*time.Minute/10).UnixNano()/1000000,
-			time.Now().Add(time.Duration(-275)*time.Minute/10).UnixNano()/1000000),
-		getResponseTimeRange(
-			data,
-			time.Now().Add(time.Duration(-275)*time.Minute/10).UnixNano()/1000000,
-			time.Now().Add(time.Duration(-225)*time.Minute/10).UnixNano()/1000000),
-		getResponseTimeRange(
-			data,
-			time.Now().Add(time.Duration(-225)*time.Minute/10).UnixNano()/1000000,
-			time.Now().Add(time.Duration(-175)*time.Minute/10).UnixNano()/1000000),
-		getResponseTimeRange(
-			data,
-			time.Now().Add(time.Duration(-175)*time.Minute/10).UnixNano()/1000000,
-			time.Now().Add(time.Duration(-125)*time.Minute/10).UnixNano()/1000000),
-		getResponseTimeRange(
-			data,
-			time.Now().Add(time.Duration(-125)*time.Minute/10).UnixNano()/1000000,
-			time.Now().Add(time.Duration(-75)*time.Minute/10).UnixNano()/1000000),
-		getResponseTimeRange(
-			data,
-			time.Now().Add(time.Duration(-75)*time.Minute/10).UnixNano()/1000000,
-			time.Now().Add(time.Duration(-25)*time.Minute/10).UnixNano()/1000000),
-		getResponseTimeRange(
-			data,
-			time.Now().Add(time.Duration(-25)*time.Minute/10).UnixNano()/1000000,
-			time.Now().UnixNano()/1000000),
-	}
-}
-
+/**
+ * Handles the /api web requests. Those all return the JSON dashboard data
+ */
 func apiHandler(w http.ResponseWriter, r *http.Request) {
+	// Set the response content type
 	w.Header().Set("Content-Type", "application/json")
 
+	// Get the last 30 minutes of data and pass that to each of the calculation functions
+	// This takes a negligible amount of time to run
 	data := processor.GetRecentData()
 
 	jsonData := map[string]interface{}{
@@ -373,16 +322,6 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		"Dashboard API stats compiling took %v for %d messages. %v for main stats, %v for web requests, %v for hosts, %v for response times\n",
 		time.Since(statsStart), jsonData["messagesLast30"].(int), statsTime, webTime, hostsTime, respTime)
 
+	// NewEncoder encodes and sends the message
 	_ = json.NewEncoder(w).Encode(jsonData)
 }
-
-
-func msgPerSec(data []map[string]interface{}) float64 {
-	// The messages are sorted, so the first is the oldest and newest - oldest = time range
-	if len(data) == 0 {
-		return 0
-	}
-
-	return float64(len(data)) / (float64(data[len(data) - 1]["timestamp"].(int64) - data[0]["timestamp"].(int64)) / 1000)
-}
-

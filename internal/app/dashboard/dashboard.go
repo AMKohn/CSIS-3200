@@ -13,6 +13,7 @@ func StartServer(wg *sync.WaitGroup) {
 	http.HandleFunc("/api/", apiHandler)
 
 	// Handle static files under /static
+	// Go's built-in static file server works well
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("web/static"))))
 
 	// Return the dashboard for all other requests
@@ -25,6 +26,7 @@ func StartServer(wg *sync.WaitGroup) {
 		// Tell the WaitGroup we're done after this function finishes
 		defer wg.Done()
 
+		// Listen on port 80
 		log.Fatal(http.ListenAndServe(":80", nil))
 	}()
 }

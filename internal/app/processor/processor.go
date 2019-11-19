@@ -8,11 +8,15 @@ import (
 // Load mock data
 var messagesDb = Mock.GetInitRequests(30)
 
+/**
+ * Gets the last 30 minutes of messages from the DB
+ */
 func GetRecentData() []map[string]interface{} {
 	timeStamp := time.Now().Add(time.Duration(-30) * time.Minute).UnixNano() / 1000000
 
 	// Find the first message that's new enough to include
-	// The slice is cleaned up to remove messages older than 30 mins, so this should be the most performant order
+	// The slice is cleaned up to remove messages older than 30 minutes and sorted
+	// oldest first, so this is the most performant order
 	i := 0
 	mLen := len(messagesDb)
 
@@ -26,9 +30,13 @@ func GetRecentData() []map[string]interface{} {
 	return messagesDb[i:]
 }
 
-func saveMessage(message map[string]interface{}) {
+/**
+ * Saves a new incoming log message into the DB
+ */
+func HandleMessage(message map[string]interface{}) {
 	removeTimestamp := time.Now().Add(time.Duration(-30) * time.Minute).UnixNano() / 1000000
 
+	// Update the message timestamp
 	timeStamp := time.Now().UnixNano() / 1000000
 	message["timestamp"] = timeStamp
 
@@ -36,14 +44,10 @@ func saveMessage(message map[string]interface{}) {
 	// This works one message at a time for simplicity and performance. Removing more than one would
 	// result in additional garbage collection and reduced performance without saving meaningful memory
 	// since the space is already allocated and will likely be used soon
+	// However, this means that the messagesDb slice will always be at it's maximum-yet size and never shrink
 	if len(messagesDb) > 0 && messagesDb[0] != nil && messagesDb[0]["timestamp"].(int64) <= removeTimestamp {
 		messagesDb = append(messagesDb[1:], message)
 	} else {
 		messagesDb = append(messagesDb, message)
 	}
-}
-
-func HandleMessage(message map[string]interface{}) {
-	// "Save" the message
-	saveMessage(message)
 }

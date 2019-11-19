@@ -13,7 +13,7 @@ var actionTypes = [4]string{"create", "read", "update", "delete"}
 func (d DBServer) GetLogMessage(ts int64) map[string]interface{} {
 	var actionType = "GET"
 
-	// 20% are randomly picked
+	// 20% of messages use a random action type
 	if rand.Intn(5) == 1 {
 		actionType = actionTypes[rand.Intn(4)]
 	}

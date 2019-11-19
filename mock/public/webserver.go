@@ -17,7 +17,7 @@ func (w WebServer) GetLogMessage(ts int64) map[string]interface{} {
 		statusCode = rand.Intn(5) * 100
 	}
 
-	// 20% are randomly picked
+	// 20% of requests have a non-GET type
 	if rand.Intn(5) == 1 {
 		requestType = requestTypes[rand.Intn(4)]
 	}

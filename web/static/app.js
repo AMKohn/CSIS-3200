@@ -1,5 +1,5 @@
 (function() {
-    const loadTemplates = function () {
+    const templates = (() => {
         let templates = {
             last60: "last-60-mins",
             slowestWeb: "slowest-web",
@@ -15,7 +15,7 @@
         }
 
         return templates;
-    };
+    })();
 
     const parseData = function(d) {
         d.stats.webRequests = numeral(d.stats.webRequests).format("0.0a");
@@ -61,7 +61,8 @@
                     scales: {
                         yAxes: [{
                             ticks: {
-                                beginAtZero: true
+                                beginAtZero: true,
+                                callback: value => value + " ms"
                             }
                         }]
                     }
@@ -83,16 +84,6 @@
         }
     };
 
-    window.templates = loadTemplates();
-
-    if (typeof window.initData !== "undefined") {
-        window.initData = parseData(window.initData);
-    }
-
-    renderChart(window.initData);
-
-    renderTemplates(window.initData);
-
     const updateData = () => {
         fetch("/api/getData")
             .then(response => response.json())
@@ -108,5 +99,6 @@
     // Update every 30 seconds
     setInterval(updateData, 10 * 1000);
 
+    // Get initial data
     updateData();
 })();

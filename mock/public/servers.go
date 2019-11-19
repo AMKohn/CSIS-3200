@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+// This is the closest Go gets to classes
+// Define a Server interface
 type Server interface {
 	SetID(id string)
 	GetRequestRate() int
@@ -14,10 +16,11 @@ type Server interface {
 	GetSystemMessage(ts int64) map[string]interface{}
 }
 
+// Define a BaseServer base class with shared methods and parameters
 type BaseServer struct {
 	ID string
 	SpeedFactor int
-	RequestRate int // Request rate in thousands per minute. 2 for non-web servers, 5 for web
+	RequestRate int // Request rate in thousands per minute
 }
 
 func (b BaseServer) SetID(id string) {
@@ -42,11 +45,16 @@ func (b BaseServer) GetSystemMessage(ts int64) map[string]interface{} {
 
 var urlPaths = [7]string{"/", "/contact", "/users", "/bi-dashboard", "/login", "/upload", "/search",}
 
+/**
+ * Gets a new default server cluster of 15 web servers, 3 DB servers, 2 search servers and 2 reverse proxies
+ */
 func GetServerCluster() []Server {
+	// Seed random so the server randomization works
 	rand.Seed(time.Now().Unix())
 
 	var servers []Server
 
+	// These are Ubuntu release names. Ubuntu's license permits using them without credit like this
 	var webNames = [15]string{
 		"Natty Narwhal",
 		"Oneiric Ocelot",
